@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
 
 interface TerminalWindowProps {
   title?: string;
@@ -8,6 +8,31 @@ interface TerminalWindowProps {
 
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
   const [closed, setClosed] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Don't drag if clicking on the traffic light buttons
+    if ((e.target as HTMLElement).closest('.group\\/btns')) return;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: offset.x, origY: offset.y };
+    e.preventDefault();
+  }, [offset]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      setOffset({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+    };
+    const handleMouseUp = () => { dragRef.current = null; };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   if (closed) {
     return (
@@ -20,9 +45,15 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   }
 
   return (
-    <div className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl">
-      {/* Title bar */}
-      <div className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none">
+    <div
+      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl"
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+    >
+      {/* Title bar - drag handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-grab active:cursor-grabbing"
+      >
         <div className="group/btns flex items-center gap-1.5">
           <span
             onClick={() => setClosed(true)}
