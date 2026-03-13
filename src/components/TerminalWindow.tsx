@@ -24,6 +24,14 @@ const loadOffset = () => {
   return { x: 0, y: 0 };
 };
 
+const loadSize = () => {
+  try {
+    const saved = sessionStorage.getItem(SIZE_KEY);
+    if (saved) return JSON.parse(saved) as { w: number; h: number };
+  } catch {}
+  return null;
+};
+
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
@@ -31,8 +39,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const [bootPhase, setBootPhase] = useState<'spinning' | 'almost'>('spinning');
   const [spinFrame, setSpinFrame] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(() => wasClosed ? null : loadSize());
   const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; origW: number; origH: number; edge: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // On mount: if was closed, clear flag, reset position, show loader for 1s
