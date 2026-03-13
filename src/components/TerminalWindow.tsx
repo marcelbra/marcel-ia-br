@@ -8,20 +8,11 @@ interface TerminalWindowProps {
 
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
   const [closed, setClosed] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-
-  useEffect(() => {
-    if (!closed) return;
-    const timer = setTimeout(() => setShowHint(true), 3400);
-    return () => clearTimeout(timer);
-  }, [closed]);
 
   if (closed) {
     return (
       <div className="h-full flex items-center justify-center">
-        <span
-          className={`font-mono text-sm text-muted-foreground/40 transition-opacity duration-700 ${showHint ? 'opacity-100' : 'opacity-0'}`}
-        >
+        <span className="font-mono text-sm text-muted-foreground/40">
           F5 / ⌘R
         </span>
       </div>
