@@ -1,6 +1,7 @@
 import TerminalWindow from "@/components/TerminalWindow";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import ProjectCard from "@/components/ProjectCard";
 import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
