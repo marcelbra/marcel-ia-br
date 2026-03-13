@@ -109,7 +109,7 @@ const Index = () => {
 
     if (activeSection === "projects") {
       return (
-        <section className="px-6 pt-6">
+        <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
           <div className="max-w-3xl mx-auto w-full">
             {expanded && (
               <button
@@ -143,7 +143,7 @@ const Index = () => {
 
     if (activeSection === "blog") {
       return (
-        <section className="px-6 pt-6">
+        <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
           <div className="max-w-3xl mx-auto w-full">
             {expanded && (
               <button
