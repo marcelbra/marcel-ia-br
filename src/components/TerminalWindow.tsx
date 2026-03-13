@@ -122,9 +122,34 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   if (booting) {
     return (
       <div className="h-full flex items-center justify-center">
-        <span className="font-mono text-lg text-muted-foreground/40">
-          {spinnerFrames[spinFrame]}
-        </span>
+        <div className="relative w-8 h-8">
+          {/* Tail segments */}
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+            const angle = (spinFrame * 45 + i * 45) % 360;
+            const rad = (angle * Math.PI) / 180;
+            const x = Math.cos(rad) * 12;
+            const y = Math.sin(rad) * 12;
+            const opacity = 1 - i * 0.12;
+            const scale = 1 - i * 0.08;
+            return (
+              <div
+                key={i}
+                className="absolute top-1/2 left-1/2"
+                style={{
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${angle}deg) scale(${scale})`,
+                  opacity: Math.max(0.1, opacity),
+                }}
+              >
+                <svg width="6" height="6" viewBox="0 0 10 10">
+                  <polygon
+                    points="5,0 8.5,1.5 10,5 8.5,8.5 5,10 1.5,8.5 0,5 1.5,1.5"
+                    fill={`hsl(270, 80%, ${40 + i * 5}%)`}
+                  />
+                </svg>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
