@@ -23,7 +23,7 @@ const loadOffset = () => {
   return { x: 0, y: 0 };
 };
 
-const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen }: TerminalWindowProps) => {
+const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, disableFullscreen }: TerminalWindowProps) => {
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
   const [booting, setBooting] = useState(wasClosed);
