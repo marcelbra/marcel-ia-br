@@ -6,6 +6,7 @@ interface TerminalWindowProps {
   children: ReactNode;
   onMinimize?: () => void;
   onFullscreen?: () => void;
+  disableFullscreen?: boolean;
 }
 
 const STORAGE_KEY = "terminal-offset";
@@ -22,7 +23,7 @@ const loadOffset = () => {
   return { x: 0, y: 0 };
 };
 
-const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen }: TerminalWindowProps) => {
+const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, disableFullscreen }: TerminalWindowProps) => {
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
   const [booting, setBooting] = useState(wasClosed);
@@ -210,10 +211,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M2 6h8"/></svg>
           </span>
           <span
-            onClick={() => { if (onFullscreen) onFullscreen(); else setFullscreen(true); }}
-            className="w-3 h-3 rounded-full bg-[hsl(140,60%,48%)] group-hover/btns:bg-[hsl(140,60%,58%)] transition-colors cursor-default relative flex items-center justify-center"
+            onClick={() => { if (!disableFullscreen) { if (onFullscreen) onFullscreen(); else setFullscreen(true); } }}
+            className={`w-3 h-3 rounded-full transition-colors cursor-default relative flex items-center justify-center ${disableFullscreen ? 'bg-[hsl(0,0%,30%)]' : 'bg-[hsl(140,60%,48%)] group-hover/btns:bg-[hsl(140,60%,58%)]'}`}
           >
-            <svg className="w-[7px] h-[7px] opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><polygon points="3,1 10,6 3,11"/></svg>
+            {!disableFullscreen && <svg className="w-[7px] h-[7px] opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><polygon points="3,1 10,6 3,11"/></svg>}
           </span>
         </div>
         <span className="flex-1 text-center text-xs text-muted-foreground truncate">
