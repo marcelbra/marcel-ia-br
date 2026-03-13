@@ -5,7 +5,6 @@ import ProjectCard from "@/components/ProjectCard";
 import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
-import { Link } from "react-router-dom";
 import { useState } from "react";
 
 const projects = [
@@ -32,6 +31,23 @@ const projects = [
   },
 ];
 
+const extraProjects = [
+  {
+    title: "Drift",
+    description: "A ambient sound mixer for focus and deep work sessions.",
+    tags: ["Web Audio", "React", "PWA"],
+    link: "#",
+    year: "2023",
+  },
+  {
+    title: "Canopy",
+    description: "Personal finance tracker with beautiful data visualizations.",
+    tags: ["D3.js", "Node.js", "PostgreSQL"],
+    link: "#",
+    year: "2023",
+  },
+];
+
 const posts = [
   {
     title: "On building things that last",
@@ -53,70 +69,133 @@ const posts = [
   },
 ];
 
+const extraPosts = [
+  {
+    title: "Why I left my job to build in public",
+    excerpt: "The scariest and most rewarding decision I've made in my career so far.",
+    date: "Sep 2025",
+    slug: "building-in-public",
+  },
+  {
+    title: "A love letter to the terminal",
+    excerpt: "Why I keep coming back to the command line after all these years.",
+    date: "Jul 2025",
+    slug: "love-letter-terminal",
+  },
+];
+
 const sections = ["marcel", "projects", "blog"] as const;
 export type SectionName = (typeof sections)[number];
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
+  const [expanded, setExpanded] = useState(false);
 
   const navigateToSection = (index: number) => {
+    setExpanded(false);
     setActiveSection(sections[index]);
   };
 
   const terminalTitle = `~/${activeSection} — zsh — 122×37`;
 
+  const renderContent = () => {
+    if (activeSection === "marcel") {
+      return (
+        <section className="min-h-full flex flex-col justify-center px-6">
+          <Hero />
+        </section>
+      );
+    }
+
+    if (activeSection === "projects") {
+      return (
+        <section className="px-6 pt-6">
+          <div className="max-w-3xl mx-auto w-full">
+            {expanded && (
+              <button
+                onClick={() => setExpanded(false)}
+                className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+              >
+                ← back
+              </button>
+            )}
+            <SectionHeading label="Projects" title={expanded ? "All Projects" : "Selected Projects"} />
+            <div className="space-y-1">
+              {projects.map((project) => (
+                <ProjectCard key={project.title} {...project} />
+              ))}
+              {expanded && extraProjects.map((project) => (
+                <ProjectCard key={project.title} {...project} />
+              ))}
+            </div>
+            {!expanded && (
+              <button
+                onClick={() => setExpanded(true)}
+                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                View all projects →
+              </button>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    if (activeSection === "blog") {
+      return (
+        <section className="px-6 pt-6">
+          <div className="max-w-3xl mx-auto w-full">
+            {expanded && (
+              <button
+                onClick={() => setExpanded(false)}
+                className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+              >
+                ← back
+              </button>
+            )}
+            <SectionHeading label="Writing" title={expanded ? "All Posts" : "Recent Posts"} />
+            <div>
+              {posts.map((post) => (
+                <BlogPostCard key={post.slug} {...post} />
+              ))}
+              {expanded && extraPosts.map((post) => (
+                <BlogPostCard key={post.slug} {...post} />
+              ))}
+            </div>
+            {!expanded && (
+              <button
+                onClick={() => setExpanded(true)}
+                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Read all posts →
+              </button>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header activeSection={activeSection} onNavigate={navigateToSection} />
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
-        <div className="w-full max-w-4xl h-[70vh]">
-          <TerminalWindow title={terminalTitle}>
-            <div className="flex-1 overflow-y-auto h-full">
-              {activeSection === "marcel" && (
-                <section className="min-h-full flex flex-col justify-center px-6">
-                  <Hero />
-                </section>
-              )}
-
-              {activeSection === "projects" && (
-                <section className="min-h-full flex flex-col justify-start pt-6 px-6">
-                  <div className="max-w-3xl mx-auto w-full">
-                    <SectionHeading label="Projects" title="Selected Projects" />
-                    <div className="space-y-1">
-                      {projects.map((project) => (
-                        <ProjectCard key={project.title} {...project} />
-                      ))}
-                    </div>
-                    <Link
-                      to="/projects"
-                      className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      View all projects →
-                    </Link>
-                  </div>
-                </section>
-              )}
-
-              {activeSection === "blog" && (
-                <section className="min-h-full flex flex-col justify-start pt-6 px-6">
-                  <div className="max-w-3xl mx-auto w-full">
-                    <SectionHeading label="Writing" title="Recent Posts" />
-                    <div>
-                      {posts.map((post) => (
-                        <BlogPostCard key={post.slug} {...post} />
-                      ))}
-                    </div>
-                    <Link
-                      to="/blog"
-                      className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      Read all posts →
-                    </Link>
-                  </div>
-                </section>
-              )}
+        <div className="w-full max-w-4xl">
+          {expanded ? (
+            <div className="py-6">
+              {renderContent()}
             </div>
-          </TerminalWindow>
+          ) : (
+            <div className="h-[70vh]">
+              <TerminalWindow title={terminalTitle}>
+                <div className="flex-1 overflow-y-auto h-full">
+                  {renderContent()}
+                </div>
+              </TerminalWindow>
+            </div>
+          )}
         </div>
       </main>
       <Footer />
