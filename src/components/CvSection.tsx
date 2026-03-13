@@ -76,7 +76,9 @@ const experiences: Experience[] = [
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
   const lastScrollTime = useRef(0);
+  const isScrolling = useRef(false);
 
   const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
