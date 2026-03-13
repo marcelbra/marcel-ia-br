@@ -34,7 +34,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     if (wasClosed) {
       sessionStorage.removeItem(CLOSED_KEY);
       sessionStorage.removeItem(STORAGE_KEY);
-      const timer = setTimeout(() => setBooting(false), 1000);
+      const timer = setTimeout(() => setBooting(false), 2500);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -140,12 +140,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
                   opacity: Math.max(0.1, opacity),
                 }}
               >
-                <svg width="6" height="6" viewBox="0 0 10 10">
-                  <polygon
-                    points="5,0 8.5,1.5 10,5 8.5,8.5 5,10 1.5,8.5 0,5 1.5,1.5"
-                    fill={`hsl(270, 80%, ${40 + i * 5}%)`}
-                  />
-                </svg>
+                <div
+                  className="w-[5px] h-[5px]"
+                  style={{ backgroundColor: `hsl(270, 80%, ${40 + i * 5}%)` }}
+                />
               </div>
             );
           })}
