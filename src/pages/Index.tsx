@@ -93,7 +93,7 @@ const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
   const [minimized, setMinimized] = useState(() => sessionStorage.getItem("terminal-minimized") === "true");
-  const [terminalClosed, setTerminalClosed] = useState(() => sessionStorage.getItem("terminal-closed") === "true");
+  const [terminalClosed, setTerminalClosed] = useState(false);
 
   const handleMinimize = () => {
     setMinimized(true);
