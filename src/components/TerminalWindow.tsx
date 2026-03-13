@@ -6,13 +6,36 @@ interface TerminalWindowProps {
   onMinimize?: () => void;
 }
 
+const STORAGE_KEY = "terminal-offset";
+const MARGIN = 12;
+
+const loadOffset = () => {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved) as { x: number; y: number };
+  } catch {}
+  return { x: 0, y: 0 };
+};
+
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
   const [closed, setClosed] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [offset, setOffset] = useState(loadOffset);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const clampOffset = useCallback((x: number, y: number) => {
+    const el = containerRef.current;
+    if (!el) return { x, y };
+    const rect = el.getBoundingClientRect();
+    // Get the original position (without current transform)
+    const baseTop = rect.top - offset.y;
+    const baseLeft = rect.left - offset.x;
+    // Don't let top edge go above MARGIN from viewport top
+    const minY = -baseTop + MARGIN;
+    return { x, y: Math.max(y, minY) };
+  }, [offset]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Don't drag if clicking on the traffic light buttons
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
     dragRef.current = { startX: e.clientX, startY: e.clientY, origX: offset.x, origY: offset.y };
     e.preventDefault();
@@ -23,16 +46,27 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       if (!dragRef.current) return;
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
-      setOffset({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+      const newOffset = clampOffset(dragRef.current.origX + dx, dragRef.current.origY + dy);
+      setOffset(newOffset);
     };
-    const handleMouseUp = () => { dragRef.current = null; };
+    const handleMouseUp = () => {
+      if (dragRef.current) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
+      }
+      dragRef.current = null;
+    };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, []);
+  }, [clampOffset, offset]);
+
+  // Save offset whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
+  }, [offset]);
 
   if (closed) {
     return (
@@ -46,6 +80,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
 
   return (
     <div
+      ref={containerRef}
       className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl"
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
     >
