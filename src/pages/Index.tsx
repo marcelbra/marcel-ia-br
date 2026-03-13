@@ -98,7 +98,7 @@ const Index = () => {
               )}
 
               {activeSection === "blog" && (
-                <section className="min-h-full flex flex-col justify-center px-6">
+                <section className="min-h-full flex flex-col justify-start pt-6 px-6">
                   <div className="max-w-3xl mx-auto w-full">
                     <SectionHeading label="Writing" title="Recent Posts" />
                     <div>

@@ -38,12 +38,13 @@ const posts = [
 ];
 
 const Blog = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-28 pb-20 px-6">
         <div className="max-w-3xl mx-auto">
-          <Link to="/" className="inline-block mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors">← back</Link>
+          <button onClick={() => navigate(-1)} className="inline-block mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors">← back</button>
           <SectionHeading label="Writing" title="All Posts" />
           <div>
             {posts.map((post) => (
