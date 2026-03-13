@@ -58,31 +58,9 @@ export type SectionName = (typeof sections)[number];
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const idx = sectionRefs.current.indexOf(entry.target as HTMLElement);
-            if (idx !== -1) setActiveSection(sections[idx]);
-          }
-        });
-      },
-      { root: container, threshold: 0.5 }
-    );
-
-    sectionRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  const scrollToSection = (index: number) => {
-    sectionRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
+  const navigateToSection = (index: number) => {
+    setActiveSection(sections[index]);
   };
 
   const terminalTitle = `~/${activeSection} — zsh — 122×37`;
