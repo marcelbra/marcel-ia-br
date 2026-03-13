@@ -58,6 +58,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     setClosed(true);
     sessionStorage.setItem(CLOSED_KEY, "true");
     sessionStorage.removeItem(STORAGE_KEY);
+    onClose?.();
   };
 
   const clampOffset = useCallback((x: number, y: number) => {
