@@ -216,16 +216,22 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     );
   }
 
+  const sizeStyle = size ? { width: size.w, height: size.h } : {};
+
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl animate-scale-in"
-      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+      className="relative flex flex-col rounded-xl overflow-visible border border-border shadow-2xl animate-scale-in"
+      style={{
+        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        ...sizeStyle,
+        ...(!size ? { height: '100%' } : {}),
+      }}
     >
       {/* Title bar - drag handle */}
       <div
         onMouseDown={handleMouseDown}
-        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default"
+        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default rounded-t-xl"
       >
         <div className="group/btns flex items-center gap-1.5">
           <span
@@ -252,9 +258,13 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         </span>
       </div>
       {/* Terminal body */}
-      <div className="flex-1 flex flex-col bg-background overflow-hidden">
+      <div className="flex-1 flex flex-col bg-background overflow-hidden rounded-b-xl">
         {children}
       </div>
+      {/* Resize handles */}
+      <div onMouseDown={handleResizeDown('e')} className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize" />
+      <div onMouseDown={handleResizeDown('s')} className="absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize" />
+      <div onMouseDown={handleResizeDown('se')} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-nwse-resize" />
     </div>
   );
 };
