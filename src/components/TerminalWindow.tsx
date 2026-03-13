@@ -7,7 +7,10 @@ interface TerminalWindowProps {
 }
 
 const STORAGE_KEY = "terminal-offset";
+const CLOSED_KEY = "terminal-closed";
 const MARGIN = 12;
+
+const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 const loadOffset = () => {
   try {
@@ -18,10 +21,36 @@ const loadOffset = () => {
 };
 
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
+  const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
-  const [offset, setOffset] = useState(loadOffset);
+  const [booting, setBooting] = useState(wasClosed);
+  const [spinFrame, setSpinFrame] = useState(0);
+  const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // On mount: if was closed, clear flag, reset position, show loader for 1s
+  useEffect(() => {
+    if (wasClosed) {
+      sessionStorage.removeItem(CLOSED_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
+      const timer = setTimeout(() => setBooting(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Spinner animation
+  useEffect(() => {
+    if (!booting) return;
+    const interval = setInterval(() => setSpinFrame((f) => (f + 1) % spinnerFrames.length), 80);
+    return () => clearInterval(interval);
+  }, [booting]);
+
+  const handleClose = () => {
+    setClosed(true);
+    sessionStorage.setItem(CLOSED_KEY, "true");
+    sessionStorage.removeItem(STORAGE_KEY);
+  };
 
   const clampOffset = useCallback((x: number, y: number) => {
     const el = containerRef.current;
@@ -29,25 +58,17 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     const rect = el.getBoundingClientRect();
     const elW = rect.width;
     const elH = rect.height;
-    // Base position = where element sits without any transform
     const baseTop = rect.top - offset.y;
     const baseLeft = rect.left - offset.x;
 
-    // Find header bottom and footer top
     const header = document.querySelector("header");
     const footer = document.querySelector("footer");
     const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
     const footerTop = footer ? footer.getBoundingClientRect().top : window.innerHeight;
 
-    // 1. Top: terminal top >= header bottom + margin
     const minY = headerBottom + MARGIN - baseTop;
-    // 4. Bottom: terminal bottom <= footer top - margin
     const maxY = footerTop - MARGIN - baseTop - elH;
-    // 2. Left: terminal right edge >= viewport left (full terminal visible)
-    //    i.e. baseLeft + x + elW >= 0  =>  x >= -baseLeft - elW + MARGIN
-    //    Actually: terminal left >= 0 + margin (no part disappears left)
     const minX = -baseLeft + MARGIN;
-    // 3. Right: terminal right <= viewport right - margin
     const maxX = window.innerWidth - baseLeft - elW - MARGIN;
 
     return {
@@ -84,7 +105,6 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     };
   }, [clampOffset, offset]);
 
-  // Save offset whenever it changes
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
   }, [offset]);
@@ -99,10 +119,20 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     );
   }
 
+  if (booting) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <span className="font-mono text-lg text-muted-foreground/40">
+          {spinnerFrames[spinFrame]}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl"
+      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl animate-scale-in"
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
     >
       {/* Title bar - drag handle */}
@@ -112,7 +142,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       >
         <div className="group/btns flex items-center gap-1.5">
           <span
-            onClick={() => setClosed(true)}
+            onClick={handleClose}
             className="w-3 h-3 rounded-full bg-[hsl(0,72%,55%)] group-hover/btns:bg-[hsl(0,72%,65%)] transition-colors cursor-default relative flex items-center justify-center"
           >
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M3 3l6 6M9 3l-6 6"/></svg>
