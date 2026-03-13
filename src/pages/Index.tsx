@@ -225,7 +225,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onFullscreen={() => { if (activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
