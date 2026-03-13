@@ -100,12 +100,6 @@ const Index = () => {
               {activeSection === "blog" && (
                 <section className="min-h-full flex flex-col justify-center px-6">
                   <div className="max-w-3xl mx-auto w-full">
-                    <button
-                      onClick={() => navigateToSection(0)}
-                      className="mb-4 font-mono text-sm text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                    >
-                      ← back
-                    </button>
                     <SectionHeading label="Writing" title="Recent Posts" />
                     <div>
                       {posts.map((post) => (

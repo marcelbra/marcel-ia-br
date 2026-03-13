@@ -48,6 +48,7 @@ const Projects = () => {
       <Header />
       <main className="pt-28 pb-20 px-6">
         <div className="max-w-3xl mx-auto">
+          <Link to="/" className="inline-block mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors">← back</Link>
           <SectionHeading label="Work" title="All Projects" />
           <div className="space-y-1">
             {projects.map((project) => (
