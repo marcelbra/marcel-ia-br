@@ -76,17 +76,22 @@ const experiences: Experience[] = [
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
   const lastScrollTime = useRef(0);
+  const isScrolling = useRef(false);
 
   const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndex) return;
+    if (clamped === currentIndexRef.current) return;
+    if (isScrolling.current) return;
+    isScrolling.current = true;
+    currentIndexRef.current = clamped;
     setCurrentIndex(clamped);
     const container = containerRef.current;
     if (!container) return;
-    lastScrollTime.current = Date.now();
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [currentIndex]);
+    setTimeout(() => { isScrolling.current = false; }, 800);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -94,18 +99,18 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (isScrolling.current) return;
       if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
+      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
     };
 
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (isScrolling.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
+      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -116,7 +121,7 @@ const CvSection = () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [currentIndex, scrollToIndex]);
+  }, [scrollToIndex]);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
