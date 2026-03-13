@@ -125,7 +125,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         <div className="relative w-8 h-8">
           {/* Tail segments */}
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
-            const angle = (spinFrame * 45 + i * 45) % 360;
+            const angle = (spinFrame * 3 + i * 45) % 360;
             const rad = (angle * Math.PI) / 180;
             const x = Math.cos(rad) * 12;
             const y = Math.sin(rad) * 12;
