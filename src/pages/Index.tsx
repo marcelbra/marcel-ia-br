@@ -1,6 +1,7 @@
 import TerminalWindow from "@/components/TerminalWindow";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import CvSection from "@/components/CvSection";
 import ProjectCard from "@/components/ProjectCard";
 import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
@@ -84,7 +85,7 @@ const extraPosts = [
   },
 ];
 
-const sections = ["marcel", "projects", "blog"] as const;
+const sections = ["marcel", "cv", "projects", "blog"] as const;
 export type SectionName = (typeof sections)[number];
 
 const Index = () => {
@@ -107,6 +108,10 @@ const Index = () => {
           <Hero />
         </section>
       );
+    }
+
+    if (activeSection === "cv") {
+      return <CvSection />;
     }
 
     if (activeSection === "projects") {
