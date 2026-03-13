@@ -4,11 +4,12 @@ interface FooterProps {
   minimized?: boolean;
   onRestore?: () => void;
   fixed?: boolean;
+  disabled?: boolean;
 }
 
-const Footer = ({ minimized, onRestore, fixed }: FooterProps) => {
+const Footer = ({ minimized, onRestore, fixed, disabled }: FooterProps) => {
   return (
-    <footer className={`border-t border-border py-4 px-6 bg-background ${fixed ? 'fixed bottom-0 left-0 right-0 z-40' : ''}`}>
+    <footer className={`border-t border-border py-4 px-6 bg-background ${fixed ? 'fixed bottom-0 left-0 right-0 z-40' : ''} ${disabled ? 'opacity-30 pointer-events-none' : ''} transition-opacity`}>
       <div className="max-w-3xl mx-auto flex items-center justify-between text-xs text-muted-foreground h-5">
         <span>
           <span className="text-ansi-green">$</span> echo © {new Date().getFullYear()}
