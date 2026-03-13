@@ -56,7 +56,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       sessionStorage.removeItem(STORAGE_KEY);
       setBootPhase('spinning');
       const phaseTimer = setTimeout(() => setBootPhase('almost'), 1500);
-      const timer = setTimeout(() => setBooting(false), 3000);
+      const timer = setTimeout(() => { setBooting(false); onBooted?.(); }, 3000);
       return () => { clearTimeout(timer); clearTimeout(phaseTimer); };
     }
   }, []);
