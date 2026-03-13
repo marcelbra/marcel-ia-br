@@ -27,12 +27,13 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     const el = containerRef.current;
     if (!el) return { x, y };
     const rect = el.getBoundingClientRect();
-    // Get the original position (without current transform)
     const baseTop = rect.top - offset.y;
-    const baseLeft = rect.left - offset.x;
+    const baseBottom = rect.bottom - offset.y;
     // Don't let top edge go above MARGIN from viewport top
     const minY = -baseTop + MARGIN;
-    return { x, y: Math.max(y, minY) };
+    // Don't let bottom edge go below viewport bottom minus MARGIN
+    const maxY = window.innerHeight - baseBottom - MARGIN;
+    return { x, y: Math.max(minY, Math.min(y, maxY)) };
   }, [offset]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
