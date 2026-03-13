@@ -223,7 +223,7 @@ const Index = () => {
           )}
         </div>
       </main>
-      <Footer minimized={minimized} onRestore={() => setMinimized(false)} />
+      <Footer minimized={minimized} onRestore={handleRestore} />
     </div>
   );
 };
