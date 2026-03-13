@@ -186,7 +186,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header activeSection={activeSection} onNavigate={navigateToSection} />
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
         <div className="w-full max-w-4xl">
