@@ -224,7 +224,7 @@ const Index = () => {
           )}
         </div>
       </main>
-      <Footer minimized={minimized} onRestore={handleRestore} />
+      <Footer minimized={minimized} onRestore={handleRestore} fixed={expanded} />
     </div>
   );
 };
