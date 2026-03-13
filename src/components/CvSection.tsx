@@ -121,7 +121,7 @@ const CvSection = () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [currentIndex, scrollToIndex]);
+  }, [scrollToIndex]);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
