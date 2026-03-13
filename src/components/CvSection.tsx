@@ -76,26 +76,17 @@ const experiences: Experience[] = [
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const currentIndexRef = useRef(0);
-  const scrollLockUntil = useRef(0);
+  const lastScrollTime = useRef(0);
 
   const scrollToIndex = useCallback((index: number) => {
-    const now = Date.now();
-    if (now < scrollLockUntil.current) return;
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndexRef.current) return;
-    scrollLockUntil.current = now + 1000;
-    currentIndexRef.current = clamped;
+    if (clamped === currentIndex) return;
     setCurrentIndex(clamped);
     const container = containerRef.current;
     if (!container) return;
+    lastScrollTime.current = Date.now();
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
-
-  // Accumulate wheel delta to require intentional scroll
-  const accumulatedDelta = useRef(0);
-  const lastWheelTime = useRef(0);
-  const DELTA_THRESHOLD = 50;
+  }, [currentIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -103,30 +94,18 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (Date.now() < scrollLockUntil.current) return;
-
-      const now = Date.now();
-      // Reset accumulator if gap between events is large (new gesture)
-      if (now - lastWheelTime.current > 200) {
-        accumulatedDelta.current = 0;
-      }
-      lastWheelTime.current = now;
-      accumulatedDelta.current += e.deltaY;
-
-      if (Math.abs(accumulatedDelta.current) >= DELTA_THRESHOLD) {
-        const direction = accumulatedDelta.current > 0 ? 1 : -1;
-        accumulatedDelta.current = 0;
-        scrollToIndex(currentIndexRef.current + direction);
-      }
+      if (Date.now() - lastScrollTime.current < 700) return;
+      if (Math.abs(e.deltaY) < 5) return;
+      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
     };
 
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() < scrollLockUntil.current) return;
+      if (Date.now() - lastScrollTime.current < 700) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
+      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -137,7 +116,7 @@ const CvSection = () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [scrollToIndex]);
+  }, [currentIndex, scrollToIndex]);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
