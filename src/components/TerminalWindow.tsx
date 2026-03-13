@@ -3,9 +3,10 @@ import { ReactNode, useState, useEffect } from "react";
 interface TerminalWindowProps {
   title?: string;
   children: ReactNode;
+  onMinimize?: () => void;
 }
 
-const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children }: TerminalWindowProps) => {
+const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
   const [closed, setClosed] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
@@ -38,7 +39,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children }: Te
           >
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M3 3l6 6M9 3l-6 6"/></svg>
           </span>
-          <span className="w-3 h-3 rounded-full bg-[hsl(50,95%,55%)] group-hover/btns:bg-[hsl(50,95%,65%)] transition-colors cursor-default relative flex items-center justify-center">
+          <span
+            onClick={onMinimize}
+            className="w-3 h-3 rounded-full bg-[hsl(50,95%,55%)] group-hover/btns:bg-[hsl(50,95%,65%)] transition-colors cursor-default relative flex items-center justify-center"
+          >
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M2 6h8"/></svg>
           </span>
           <span className="w-3 h-3 rounded-full bg-[hsl(140,60%,48%)] group-hover/btns:bg-[hsl(140,60%,58%)] transition-colors cursor-default relative flex items-center justify-center">

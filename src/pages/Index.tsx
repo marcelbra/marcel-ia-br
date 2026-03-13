@@ -8,6 +8,7 @@ import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
 import { useState } from "react";
 
+// ... keep existing code
 const projects = [
   {
     title: "Meridian",
@@ -91,6 +92,7 @@ export type SectionName = (typeof sections)[number];
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
+  const [minimized, setMinimized] = useState(false);
 
   const navigateToSection = (index: number) => {
     if (sections[index] === "marcel") {
@@ -194,9 +196,15 @@ const Index = () => {
             <div className="py-6">
               {renderContent()}
             </div>
+          ) : minimized ? (
+            <div className="h-[70vh] flex items-center justify-center">
+              <span className="font-mono text-sm text-muted-foreground/40 animate-fade-in">
+                minimized to dock ↓
+              </span>
+            </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle}>
+              <TerminalWindow title={terminalTitle} onMinimize={() => setMinimized(true)}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
@@ -205,7 +213,7 @@ const Index = () => {
           )}
         </div>
       </main>
-      <Footer />
+      <Footer minimized={minimized} onRestore={() => setMinimized(false)} />
     </div>
   );
 };
