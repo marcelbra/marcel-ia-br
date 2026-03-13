@@ -22,11 +22,11 @@ const Hero = () => {
         
         <p className="text-foreground mb-4">
           <span className="text-ansi-yellow">name</span>
-          <span className="text-muted-foreground">:</span> John Doe
+          <span className="text-muted-foreground">:</span> Marcel Braasch
         </p>
         <p className="text-foreground mb-4">
           <span className="text-ansi-yellow">role</span>
-          <span className="text-muted-foreground">:</span> developer & designer
+          <span className="text-muted-foreground">:</span> ai and software engineer
         </p>
         <p className="text-muted-foreground mb-6 max-w-lg">
           <span className="text-ansi-yellow">bio</span>
