@@ -107,10 +107,10 @@ const CvSection = () => {
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (isScrolling.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
+      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
