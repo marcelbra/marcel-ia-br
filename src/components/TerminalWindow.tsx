@@ -9,7 +9,10 @@ interface TerminalWindowProps {
 
 const STORAGE_KEY = "terminal-offset";
 const CLOSED_KEY = "terminal-closed";
+const SIZE_KEY = "terminal-size";
 const MARGIN = 12;
+const MIN_W = 400;
+const MIN_H = 250;
 
 const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -21,6 +24,14 @@ const loadOffset = () => {
   return { x: 0, y: 0 };
 };
 
+const loadSize = () => {
+  try {
+    const saved = sessionStorage.getItem(SIZE_KEY);
+    if (saved) return JSON.parse(saved) as { w: number; h: number };
+  } catch {}
+  return null;
+};
+
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize }: TerminalWindowProps) => {
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
@@ -28,8 +39,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const [bootPhase, setBootPhase] = useState<'spinning' | 'almost'>('spinning');
   const [spinFrame, setSpinFrame] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(() => wasClosed ? null : loadSize());
   const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; origW: number; origH: number; edge: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // On mount: if was closed, clear flag, reset position, show loader for 1s
@@ -55,7 +68,17 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     setClosed(true);
     sessionStorage.setItem(CLOSED_KEY, "true");
     sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SIZE_KEY);
   };
+
+  const handleResizeDown = useCallback((edge: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    resizeRef.current = { startX: e.clientX, startY: e.clientY, origW: rect.width, origH: rect.height, edge };
+  }, []);
 
   const clampOffset = useCallback((x: number, y: number) => {
     const el = containerRef.current;
@@ -91,17 +114,30 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      const newOffset = clampOffset(dragRef.current.origX + dx, dragRef.current.origY + dy);
-      setOffset(newOffset);
+      if (dragRef.current) {
+        const dx = e.clientX - dragRef.current.startX;
+        const dy = e.clientY - dragRef.current.startY;
+        const newOffset = clampOffset(dragRef.current.origX + dx, dragRef.current.origY + dy);
+        setOffset(newOffset);
+      }
+      if (resizeRef.current) {
+        const { startX, startY, origW, origH, edge } = resizeRef.current;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const newW = edge.includes('e') ? Math.max(MIN_W, origW + dx) : origW;
+        const newH = edge.includes('s') ? Math.max(MIN_H, origH + dy) : origH;
+        setSize({ w: newW, h: newH });
+      }
     };
     const handleMouseUp = () => {
       if (dragRef.current) {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
       }
+      if (resizeRef.current) {
+        sessionStorage.setItem(SIZE_KEY, JSON.stringify(size));
+      }
       dragRef.current = null;
+      resizeRef.current = null;
     };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
@@ -109,11 +145,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [clampOffset, offset]);
-
-  useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
-  }, [offset]);
+  }, [clampOffset, offset, size]);
 
   if (closed) {
     return (
@@ -184,16 +216,22 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     );
   }
 
+  const sizeStyle = size ? { width: size.w, height: size.h } : {};
+
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl animate-scale-in"
-      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+      className="relative flex flex-col rounded-xl overflow-visible border border-border shadow-2xl animate-scale-in"
+      style={{
+        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        ...sizeStyle,
+        ...(!size ? { height: '100%' } : {}),
+      }}
     >
       {/* Title bar - drag handle */}
       <div
         onMouseDown={handleMouseDown}
-        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default"
+        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default rounded-t-xl"
       >
         <div className="group/btns flex items-center gap-1.5">
           <span
@@ -220,9 +258,13 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         </span>
       </div>
       {/* Terminal body */}
-      <div className="flex-1 flex flex-col bg-background overflow-hidden">
+      <div className="flex-1 flex flex-col bg-background overflow-hidden rounded-b-xl">
         {children}
       </div>
+      {/* Resize handles */}
+      <div onMouseDown={handleResizeDown('e')} className="absolute top-0 -right-1 w-2 h-full cursor-ew-resize" />
+      <div onMouseDown={handleResizeDown('s')} className="absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize" />
+      <div onMouseDown={handleResizeDown('se')} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-nwse-resize" />
     </div>
   );
 };
