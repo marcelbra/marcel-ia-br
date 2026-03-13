@@ -6,6 +6,7 @@ interface TerminalWindowProps {
   children: ReactNode;
   onMinimize?: () => void;
   onFullscreen?: () => void;
+  onClose?: () => void;
   disableFullscreen?: boolean;
 }
 
