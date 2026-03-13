@@ -92,7 +92,17 @@ export type SectionName = (typeof sections)[number];
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
-  const [minimized, setMinimized] = useState(false);
+  const [minimized, setMinimized] = useState(() => sessionStorage.getItem("terminal-minimized") === "true");
+
+  const handleMinimize = () => {
+    setMinimized(true);
+    sessionStorage.setItem("terminal-minimized", "true");
+  };
+
+  const handleRestore = () => {
+    setMinimized(false);
+    sessionStorage.removeItem("terminal-minimized");
+  };
 
   const navigateToSection = (index: number) => {
     if (sections[index] === "marcel") {
