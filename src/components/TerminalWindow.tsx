@@ -1,6 +1,19 @@
 import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+const ClosedMessage = () => {
+  const [bright, setBright] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setBright(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <span className={`font-mono text-lg tracking-wide transition-colors duration-700 ${bright ? 'text-muted-foreground/80' : 'text-muted-foreground/30'}`}>
+      F5 / ⌘ + R
+    </span>
+  );
+};
+
 interface TerminalWindowProps {
   title?: string;
   children: ReactNode;
