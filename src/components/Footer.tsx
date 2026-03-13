@@ -8,17 +8,17 @@ interface FooterProps {
 const Footer = ({ minimized, onRestore }: FooterProps) => {
   return (
     <footer className="border-t border-border py-4 px-6">
-      <div className="max-w-3xl mx-auto flex items-center justify-between text-xs text-muted-foreground">
+      <div className="max-w-3xl mx-auto flex items-center justify-between text-xs text-muted-foreground h-5">
         <span>
           <span className="text-ansi-green">$</span> echo © {new Date().getFullYear()}
         </span>
         <span className="flex items-center gap-2">
           {minimized && onRestore && (
-            <span className="animate-scale-in">
+            <span className="animate-scale-in flex items-center">
               <MiniTerminal onClick={onRestore} />
             </span>
           )}
-          <span className="text-ansi-blue">[EOF]</span>
+          <span className="text-ansi-blue leading-none">[EOF]</span>
         </span>
       </div>
     </footer>
