@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BlogPostCard from "@/components/BlogPostCard";
@@ -42,6 +43,7 @@ const Blog = () => {
       <Header />
       <main className="pt-28 pb-20 px-6">
         <div className="max-w-3xl mx-auto">
+          <Link to="/" className="inline-block mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors">← back</Link>
           <SectionHeading label="Writing" title="All Posts" />
           <div>
             {posts.map((post) => (
