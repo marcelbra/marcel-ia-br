@@ -92,7 +92,9 @@ const Index = () => {
   const [expanded, setExpanded] = useState(false);
 
   const navigateToSection = (index: number) => {
-    setExpanded(false);
+    if (sections[index] === "marcel") {
+      setExpanded(false);
+    }
     setActiveSection(sections[index]);
   };
 
