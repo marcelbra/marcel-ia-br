@@ -6,7 +6,7 @@ import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 const projects = [
   {
