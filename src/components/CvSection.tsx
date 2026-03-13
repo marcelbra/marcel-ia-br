@@ -99,9 +99,9 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (isScrolling.current) return;
       if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
+      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
     };
 
     let touchStartY = 0;
