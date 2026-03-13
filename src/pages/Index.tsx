@@ -88,67 +88,69 @@ const Index = () => {
   const terminalTitle = `~/${activeSection} — zsh — 122×37`;
 
   return (
-    <div className="h-screen bg-[hsl(210,6%,7%)] p-3 flex flex-col">
-      <TerminalWindow title={terminalTitle}>
-        <Header activeSection={activeSection} onNavigate={scrollToSection} />
-        <div
-          ref={containerRef}
-          className="flex-1 overflow-y-auto snap-y snap-mandatory h-full"
-        >
-          {/* Marcel / About */}
-          <section
-            ref={(el) => { sectionRefs.current[0] = el; }}
-            className="snap-start min-h-full flex flex-col justify-center px-6"
-          >
-            <Hero />
-          </section>
-
-          {/* Projects */}
-          <section
-            ref={(el) => { sectionRefs.current[1] = el; }}
-            className="snap-start min-h-full flex flex-col justify-center px-6"
-          >
-            <div className="max-w-3xl mx-auto w-full">
-              <SectionHeading label="Projects" title="Selected Projects" />
-              <div className="space-y-1">
-                {projects.map((project) => (
-                  <ProjectCard key={project.title} {...project} />
-                ))}
-              </div>
-              <Link
-                to="/projects"
-                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header activeSection={activeSection} onNavigate={scrollToSection} />
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
+        <div className="w-full max-w-4xl h-[70vh]">
+          <TerminalWindow title={terminalTitle}>
+            <div
+              ref={containerRef}
+              className="flex-1 overflow-y-auto snap-y snap-mandatory h-full"
+            >
+              {/* Marcel / About */}
+              <section
+                ref={(el) => { sectionRefs.current[0] = el; }}
+                className="snap-start min-h-full flex flex-col justify-center px-6"
               >
-                View all projects →
-              </Link>
-            </div>
-          </section>
+                <Hero />
+              </section>
 
-          {/* Blog */}
-          <section
-            ref={(el) => { sectionRefs.current[2] = el; }}
-            className="snap-start min-h-full flex flex-col justify-center px-6"
-          >
-            <div className="max-w-3xl mx-auto w-full">
-              <SectionHeading label="Writing" title="Recent Posts" />
-              <div>
-                {posts.map((post) => (
-                  <BlogPostCard key={post.slug} {...post} />
-                ))}
-              </div>
-              <Link
-                to="/blog"
-                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+              {/* Projects */}
+              <section
+                ref={(el) => { sectionRefs.current[1] = el; }}
+                className="snap-start min-h-full flex flex-col justify-center px-6"
               >
-                Read all posts →
-              </Link>
+                <div className="max-w-3xl mx-auto w-full">
+                  <SectionHeading label="Projects" title="Selected Projects" />
+                  <div className="space-y-1">
+                    {projects.map((project) => (
+                      <ProjectCard key={project.title} {...project} />
+                    ))}
+                  </div>
+                  <Link
+                    to="/projects"
+                    className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    View all projects →
+                  </Link>
+                </div>
+              </section>
+
+              {/* Blog */}
+              <section
+                ref={(el) => { sectionRefs.current[2] = el; }}
+                className="snap-start min-h-full flex flex-col justify-center px-6"
+              >
+                <div className="max-w-3xl mx-auto w-full">
+                  <SectionHeading label="Writing" title="Recent Posts" />
+                  <div>
+                    {posts.map((post) => (
+                      <BlogPostCard key={post.slug} {...post} />
+                    ))}
+                  </div>
+                  <Link
+                    to="/blog"
+                    className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Read all posts →
+                  </Link>
+                </div>
+              </section>
             </div>
-            <div className="max-w-3xl mx-auto w-full mt-auto">
-              <Footer />
-            </div>
-          </section>
+          </TerminalWindow>
         </div>
-      </TerminalWindow>
+      </main>
+      <Footer />
     </div>
   );
 };
