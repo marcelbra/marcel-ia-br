@@ -214,7 +214,7 @@ const Index = () => {
               </span>
             </div>
           ) : (
-            <div className="h-[70vh]">
+            <div className="h-[70vh] flex items-center justify-center">
               <TerminalWindow title={terminalTitle} onMinimize={handleMinimize}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
