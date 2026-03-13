@@ -20,6 +20,7 @@ interface TerminalWindowProps {
   onMinimize?: () => void;
   onFullscreen?: () => void;
   onClose?: () => void;
+  onBooted?: () => void;
   disableFullscreen?: boolean;
 }
 
@@ -37,7 +38,7 @@ const loadOffset = () => {
   return { x: 0, y: 0 };
 };
 
-const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, onClose, disableFullscreen }: TerminalWindowProps) => {
+const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, onClose, onBooted, disableFullscreen }: TerminalWindowProps) => {
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
   const [booting, setBooting] = useState(wasClosed);
@@ -55,7 +56,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       sessionStorage.removeItem(STORAGE_KEY);
       setBootPhase('spinning');
       const phaseTimer = setTimeout(() => setBootPhase('almost'), 1500);
-      const timer = setTimeout(() => setBooting(false), 3000);
+      const timer = setTimeout(() => { setBooting(false); onBooted?.(); }, 3000);
       return () => { clearTimeout(timer); clearTimeout(phaseTimer); };
     }
   }, []);

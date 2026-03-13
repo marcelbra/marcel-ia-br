@@ -93,7 +93,7 @@ const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
   const [minimized, setMinimized] = useState(() => sessionStorage.getItem("terminal-minimized") === "true");
-  const [terminalClosed, setTerminalClosed] = useState(false);
+  const [terminalClosed, setTerminalClosed] = useState(() => sessionStorage.getItem("terminal-closed") === "true");
 
   const handleMinimize = () => {
     setMinimized(true);
@@ -226,7 +226,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
