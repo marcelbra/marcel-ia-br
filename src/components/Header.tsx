@@ -12,6 +12,7 @@ const links = [
 interface HeaderProps {
   activeSection?: SectionName;
   onNavigate?: (index: number) => void;
+  disabled?: boolean;
 }
 
 const Header = ({ activeSection = "marcel", onNavigate }: HeaderProps) => {
