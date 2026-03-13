@@ -5,6 +5,7 @@ import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 
 const projects = [
   {
@@ -51,17 +52,60 @@ const posts = [
   },
 ];
 
+const sections = ["marcel", "projects", "blog"] as const;
+export type SectionName = (typeof sections)[number];
+
 const Index = () => {
+  const [activeSection, setActiveSection] = useState<SectionName>("marcel");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = sectionRefs.current.indexOf(entry.target as HTMLElement);
+            if (idx !== -1) setActiveSection(sections[idx]);
+          }
+        });
+      },
+      { root: container, threshold: 0.5 }
+    );
+
+    sectionRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToSection = (index: number) => {
+    sectionRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <Hero />
+    <div className="h-screen bg-background flex flex-col">
+      <Header activeSection={activeSection} onNavigate={scrollToSection} />
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto snap-y snap-mandatory"
+      >
+        {/* Marcel / About */}
+        <section
+          ref={(el) => { sectionRefs.current[0] = el; }}
+          className="snap-start min-h-screen flex flex-col justify-center px-6"
+        >
+          <Hero />
+        </section>
 
         {/* Projects */}
-        <section className="px-6 pb-20">
-          <div className="max-w-3xl mx-auto">
-            <SectionHeading label="Work" title="Selected Projects" />
+        <section
+          ref={(el) => { sectionRefs.current[1] = el; }}
+          className="snap-start min-h-screen flex flex-col justify-center px-6"
+        >
+          <div className="max-w-3xl mx-auto w-full">
+            <SectionHeading label="Projects" title="Selected Projects" />
             <div className="space-y-1">
               {projects.map((project) => (
                 <ProjectCard key={project.title} {...project} />
@@ -77,8 +121,11 @@ const Index = () => {
         </section>
 
         {/* Blog */}
-        <section className="px-6 pb-20">
-          <div className="max-w-3xl mx-auto">
+        <section
+          ref={(el) => { sectionRefs.current[2] = el; }}
+          className="snap-start min-h-screen flex flex-col justify-center px-6"
+        >
+          <div className="max-w-3xl mx-auto w-full">
             <SectionHeading label="Writing" title="Recent Posts" />
             <div>
               {posts.map((post) => (
@@ -92,9 +139,11 @@ const Index = () => {
               Read all posts →
             </Link>
           </div>
+          <div className="max-w-3xl mx-auto w-full mt-auto">
+            <Footer />
+          </div>
         </section>
-      </main>
-      <Footer />
+      </div>
     </div>
   );
 };

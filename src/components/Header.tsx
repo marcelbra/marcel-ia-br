@@ -1,37 +1,65 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import type { SectionName } from "@/pages/Index";
 
 const links = [
-  { to: "/", label: "about" },
-  { to: "/projects", label: "projects" },
-  { to: "/blog", label: "blog" },
+  { label: "marcel", index: 0 },
+  { label: "projects", index: 1 },
+  { label: "blog", index: 2 },
 ];
 
-const Header = () => {
+interface HeaderProps {
+  activeSection?: SectionName;
+  onNavigate?: (index: number) => void;
+}
+
+const Header = ({ activeSection = "marcel", onNavigate }: HeaderProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+
+  const currentLabel = isHome
+    ? `~/${activeSection}`
+    : location.pathname === "/projects"
+      ? "~/projects"
+      : location.pathname === "/blog"
+        ? "~/blog"
+        : "~/marcel";
+
+  const handleNav = (index: number) => {
+    if (isHome && onNavigate) {
+      onNavigate(index);
+      setMobileOpen(false);
+    } else {
+      window.location.href = "/";
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border">
       <nav className="max-w-3xl mx-auto px-6 h-12 flex items-center justify-between">
-        <NavLink to="/" className="text-ansi-green font-bold tracking-tight hover:opacity-80 transition-opacity">
-          ~/jdoe
-        </NavLink>
+        <button
+          onClick={() => handleNav(0)}
+          className="text-ansi-green font-bold tracking-tight hover:opacity-80 transition-opacity"
+        >
+          {currentLabel}
+        </button>
 
         {/* Desktop */}
         <ul className="hidden md:flex items-center gap-1">
           {links.map((link, i) => (
-            <li key={link.to} className="flex items-center">
+            <li key={link.label} className="flex items-center">
               {i > 0 && <span className="text-muted-foreground mx-1">/</span>}
-              <NavLink
-                to={link.to}
-                className={({ isActive }) =>
-                  `text-sm px-2 py-1 transition-colors ${
-                    isActive ? "text-ansi-yellow" : "text-muted-foreground hover:text-foreground"
-                  }`
-                }
+              <button
+                onClick={() => handleNav(link.index)}
+                className={`text-sm px-2 py-1 transition-colors ${
+                  activeSection === link.label
+                    ? "text-ansi-yellow"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 {link.label}
-              </NavLink>
+              </button>
             </li>
           ))}
         </ul>
@@ -51,18 +79,17 @@ const Header = () => {
         <div className="md:hidden border-t border-border bg-background">
           <ul className="max-w-3xl mx-auto px-6 py-3 flex flex-col gap-1">
             {links.map((link) => (
-              <li key={link.to}>
-                <NavLink
-                  to={link.to}
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `text-sm block py-1 transition-colors ${
-                      isActive ? "text-ansi-yellow" : "text-muted-foreground hover:text-foreground"
-                    }`
-                  }
+              <li key={link.label}>
+                <button
+                  onClick={() => handleNav(link.index)}
+                  className={`text-sm block py-1 transition-colors w-full text-left ${
+                    activeSection === link.label
+                      ? "text-ansi-yellow"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   → {link.label}
-                </NavLink>
+                </button>
               </li>
             ))}
           </ul>
