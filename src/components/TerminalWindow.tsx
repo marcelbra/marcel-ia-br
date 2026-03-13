@@ -22,7 +22,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   return (
     <div className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl">
       {/* Title bar */}
-      <div className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0">
+      <div className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none">
         <div className="group/btns flex items-center gap-1.5">
           <span
             onClick={() => setClosed(true)}
