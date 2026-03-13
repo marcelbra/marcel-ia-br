@@ -34,7 +34,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     if (wasClosed) {
       sessionStorage.removeItem(CLOSED_KEY);
       sessionStorage.removeItem(STORAGE_KEY);
-      const timer = setTimeout(() => setBooting(false), 2500);
+      const timer = setTimeout(() => setBooting(false), 2800);
       return () => clearTimeout(timer);
     }
   }, []);
