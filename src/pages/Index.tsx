@@ -115,10 +115,20 @@ const Index = () => {
   const terminalTitle = `~/${activeSection} — zsh — 122×37`;
 
   const renderContent = () => {
-    if (activeSection === "marcel") {
+      if (activeSection === "marcel") {
       return (
-        <section className="min-h-full flex flex-col justify-center px-6">
-          <Hero />
+        <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
+          <div className="max-w-3xl mx-auto w-full">
+            {expanded && (
+              <button
+                onClick={() => setExpanded(false)}
+                className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+              >
+                ← back
+              </button>
+            )}
+            <Hero />
+          </div>
         </section>
       );
     }
