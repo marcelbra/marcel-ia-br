@@ -197,7 +197,7 @@ const Index = () => {
           ) : (
             <div className="h-[70vh]">
               <TerminalWindow title={terminalTitle}>
-                <div className="flex-1 overflow-y-auto h-full">
+                <div className="flex-1 overflow-hidden h-full">
                   {renderContent()}
                 </div>
               </TerminalWindow>
