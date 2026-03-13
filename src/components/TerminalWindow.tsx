@@ -114,17 +114,30 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      const newOffset = clampOffset(dragRef.current.origX + dx, dragRef.current.origY + dy);
-      setOffset(newOffset);
+      if (dragRef.current) {
+        const dx = e.clientX - dragRef.current.startX;
+        const dy = e.clientY - dragRef.current.startY;
+        const newOffset = clampOffset(dragRef.current.origX + dx, dragRef.current.origY + dy);
+        setOffset(newOffset);
+      }
+      if (resizeRef.current) {
+        const { startX, startY, origW, origH, edge } = resizeRef.current;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const newW = edge.includes('e') ? Math.max(MIN_W, origW + dx) : origW;
+        const newH = edge.includes('s') ? Math.max(MIN_H, origH + dy) : origH;
+        setSize({ w: newW, h: newH });
+      }
     };
     const handleMouseUp = () => {
       if (dragRef.current) {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
       }
+      if (resizeRef.current) {
+        sessionStorage.setItem(SIZE_KEY, JSON.stringify(size));
+      }
       dragRef.current = null;
+      resizeRef.current = null;
     };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
@@ -132,11 +145,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [clampOffset, offset]);
-
-  useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
-  }, [offset]);
+  }, [clampOffset, offset, size]);
 
   if (closed) {
     return (
