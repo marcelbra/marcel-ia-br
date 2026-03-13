@@ -12,9 +12,10 @@ const links = [
 interface HeaderProps {
   activeSection?: SectionName;
   onNavigate?: (index: number) => void;
+  disabled?: boolean;
 }
 
-const Header = ({ activeSection = "marcel", onNavigate }: HeaderProps) => {
+const Header = ({ activeSection = "marcel", onNavigate, disabled }: HeaderProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -37,7 +38,7 @@ const Header = ({ activeSection = "marcel", onNavigate }: HeaderProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border">
+    <header className={`fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border transition-opacity ${disabled ? 'opacity-30 pointer-events-none' : ''}`}>
       <nav className="max-w-4xl mx-auto px-6 h-12 flex items-center justify-between">
         <span className="text-ansi-green font-bold tracking-tight">
           {currentLabel}

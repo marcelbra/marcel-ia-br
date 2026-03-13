@@ -6,6 +6,7 @@ interface TerminalWindowProps {
   children: ReactNode;
   onMinimize?: () => void;
   onFullscreen?: () => void;
+  onClose?: () => void;
   disableFullscreen?: boolean;
 }
 
@@ -23,7 +24,7 @@ const loadOffset = () => {
   return { x: 0, y: 0 };
 };
 
-const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, disableFullscreen }: TerminalWindowProps) => {
+const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, onClose, disableFullscreen }: TerminalWindowProps) => {
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
   const [booting, setBooting] = useState(wasClosed);
@@ -57,6 +58,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     setClosed(true);
     sessionStorage.setItem(CLOSED_KEY, "true");
     sessionStorage.removeItem(STORAGE_KEY);
+    onClose?.();
   };
 
   const clampOffset = useCallback((x: number, y: number) => {

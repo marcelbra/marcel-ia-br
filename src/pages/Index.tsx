@@ -93,6 +93,7 @@ const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
   const [minimized, setMinimized] = useState(() => sessionStorage.getItem("terminal-minimized") === "true");
+  const [terminalClosed, setTerminalClosed] = useState(() => sessionStorage.getItem("terminal-closed") === "true");
 
   const handleMinimize = () => {
     setMinimized(true);
@@ -210,7 +211,7 @@ const Index = () => {
 
   return (
     <div className={`bg-background flex flex-col ${expanded ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
-      <Header activeSection={activeSection} onNavigate={navigateToSection} />
+      <Header activeSection={activeSection} onNavigate={navigateToSection} disabled={terminalClosed} />
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 min-h-0">
         <div className="w-full max-w-4xl h-full">
           {expanded ? (
@@ -225,7 +226,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
