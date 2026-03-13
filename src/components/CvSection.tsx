@@ -75,11 +75,54 @@ const experiences: Experience[] = [
 
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const isScrolling = useRef(false);
+
+  const scrollToIndex = useCallback((index: number) => {
+    const clamped = Math.max(0, Math.min(experiences.length - 1, index));
+    if (clamped === currentIndex) return;
+    setCurrentIndex(clamped);
+    const container = containerRef.current;
+    if (!container) return;
+    isScrolling.current = true;
+    container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => { isScrolling.current = false; }, 600);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (isScrolling.current) return;
+      if (Math.abs(e.deltaY) < 5) return;
+      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
+    };
+
+    let touchStartY = 0;
+    const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isScrolling.current) return;
+      const diff = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(diff) < 30) return;
+      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [currentIndex, scrollToIndex]);
 
   return (
-    <div ref={containerRef} className="h-full snap-y snap-mandatory overflow-y-auto">
+    <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
-        <div key={i} className="snap-start h-full flex flex-col justify-center px-6">
+        <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
             {/* ASCII company logo */}
             <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
