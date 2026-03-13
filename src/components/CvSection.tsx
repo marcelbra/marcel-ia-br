@@ -82,13 +82,16 @@ const CvSection = () => {
 
   const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndex) return;
+    if (clamped === currentIndexRef.current) return;
+    if (isScrolling.current) return;
+    isScrolling.current = true;
+    currentIndexRef.current = clamped;
     setCurrentIndex(clamped);
     const container = containerRef.current;
     if (!container) return;
-    lastScrollTime.current = Date.now();
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [currentIndex]);
+    setTimeout(() => { isScrolling.current = false; }, 800);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
