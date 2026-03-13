@@ -92,7 +92,17 @@ export type SectionName = (typeof sections)[number];
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
-  const [minimized, setMinimized] = useState(false);
+  const [minimized, setMinimized] = useState(() => sessionStorage.getItem("terminal-minimized") === "true");
+
+  const handleMinimize = () => {
+    setMinimized(true);
+    sessionStorage.setItem("terminal-minimized", "true");
+  };
+
+  const handleRestore = () => {
+    setMinimized(false);
+    sessionStorage.removeItem("terminal-minimized");
+  };
 
   const navigateToSection = (index: number) => {
     if (sections[index] === "marcel") {
@@ -204,7 +214,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={() => setMinimized(true)}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
@@ -213,7 +223,7 @@ const Index = () => {
           )}
         </div>
       </main>
-      <Footer minimized={minimized} onRestore={() => setMinimized(false)} />
+      <Footer minimized={minimized} onRestore={handleRestore} />
     </div>
   );
 };
