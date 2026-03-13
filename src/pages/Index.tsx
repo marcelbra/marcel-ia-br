@@ -211,7 +211,7 @@ const Index = () => {
 
   return (
     <div className={`bg-background flex flex-col ${expanded ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
-      <Header activeSection={activeSection} onNavigate={navigateToSection} />
+      <Header activeSection={activeSection} onNavigate={navigateToSection} disabled={terminalClosed} />
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 min-h-0">
         <div className="w-full max-w-4xl h-full">
           {expanded ? (
