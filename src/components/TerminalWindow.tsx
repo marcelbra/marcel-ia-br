@@ -120,29 +120,31 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   }
 
   if (booting) {
+    const headIndex = Math.floor(spinFrame / 4) % 8;
     return (
       <div className="h-full flex items-center justify-center">
         <div className="relative w-8 h-8">
-          {/* Tail segments */}
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
-            const angle = (spinFrame * 3 + i * 45) % 360;
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((pos) => {
+            const angle = pos * 45;
             const rad = (angle * Math.PI) / 180;
             const x = Math.cos(rad) * 12;
             const y = Math.sin(rad) * 12;
-            const opacity = 1 - i * 0.12;
-            const scale = 1 - i * 0.08;
+            // How far behind the head is this position?
+            const behind = (headIndex - pos + 8) % 8;
+            const scale = 1 - behind * 0.09;
+            const opacity = 1 - behind * 0.12;
             return (
               <div
-                key={i}
-                className="absolute top-1/2 left-1/2"
+                key={pos}
+                className="absolute top-1/2 left-1/2 transition-all duration-100"
                 style={{
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(45deg) scale(${scale})`,
-                  opacity: Math.max(0.1, opacity),
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(45deg) scale(${Math.max(0.3, scale)})`,
+                  opacity: Math.max(0.08, opacity),
                 }}
               >
                 <div
                   className="w-[5px] h-[5px]"
-                  style={{ backgroundColor: `hsl(270, 80%, ${40 + i * 5}%)` }}
+                  style={{ backgroundColor: `hsl(270, 80%, ${35 + behind * 4}%)` }}
                 />
               </div>
             );
