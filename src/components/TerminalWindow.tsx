@@ -147,7 +147,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
               >
                 <div
                   className="w-[5px] h-[5px]"
-                  style={{ backgroundColor: `hsl(270, 80%, ${35 + behind * 4}%)` }}
+                  style={{ backgroundColor: `hsl(0, 0%, ${40 + behind * 4}%)` }}
                 />
               </div>
             );
