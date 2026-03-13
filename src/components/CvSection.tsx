@@ -123,7 +123,7 @@ const CvSection = () => {
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isScrolling.current) return;
+      if (Date.now() < scrollLockUntil.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
       scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
