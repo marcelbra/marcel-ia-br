@@ -153,7 +153,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
             );
           })}
           {bootPhase === 'almost' && (
-            <p className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-muted-foreground whitespace-nowrap font-mono animate-[blink_0.74s_step-end_infinite]">loading ...</p>
+            <p className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-muted-foreground whitespace-nowrap font-mono">loading ...</p>
           )}
         </div>
       </div>
