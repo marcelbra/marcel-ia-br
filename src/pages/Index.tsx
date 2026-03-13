@@ -1,3 +1,4 @@
+import TerminalWindow from "@/components/TerminalWindow";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import ProjectCard from "@/components/ProjectCard";
@@ -84,66 +85,70 @@ const Index = () => {
     sectionRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const terminalTitle = `~/${activeSection} — zsh — 122×37`;
+
   return (
-    <div className="h-screen bg-background flex flex-col">
-      <Header activeSection={activeSection} onNavigate={scrollToSection} />
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto snap-y snap-mandatory"
-      >
-        {/* Marcel / About */}
-        <section
-          ref={(el) => { sectionRefs.current[0] = el; }}
-          className="snap-start min-h-screen flex flex-col justify-center px-6"
+    <div className="h-screen bg-[hsl(210,6%,7%)] p-3 flex flex-col">
+      <TerminalWindow title={terminalTitle}>
+        <Header activeSection={activeSection} onNavigate={scrollToSection} />
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-y-auto snap-y snap-mandatory h-full"
         >
-          <Hero />
-        </section>
+          {/* Marcel / About */}
+          <section
+            ref={(el) => { sectionRefs.current[0] = el; }}
+            className="snap-start min-h-full flex flex-col justify-center px-6"
+          >
+            <Hero />
+          </section>
 
-        {/* Projects */}
-        <section
-          ref={(el) => { sectionRefs.current[1] = el; }}
-          className="snap-start min-h-screen flex flex-col justify-center px-6"
-        >
-          <div className="max-w-3xl mx-auto w-full">
-            <SectionHeading label="Projects" title="Selected Projects" />
-            <div className="space-y-1">
-              {projects.map((project) => (
-                <ProjectCard key={project.title} {...project} />
-              ))}
+          {/* Projects */}
+          <section
+            ref={(el) => { sectionRefs.current[1] = el; }}
+            className="snap-start min-h-full flex flex-col justify-center px-6"
+          >
+            <div className="max-w-3xl mx-auto w-full">
+              <SectionHeading label="Projects" title="Selected Projects" />
+              <div className="space-y-1">
+                {projects.map((project) => (
+                  <ProjectCard key={project.title} {...project} />
+                ))}
+              </div>
+              <Link
+                to="/projects"
+                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                View all projects →
+              </Link>
             </div>
-            <Link
-              to="/projects"
-              className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              View all projects →
-            </Link>
-          </div>
-        </section>
+          </section>
 
-        {/* Blog */}
-        <section
-          ref={(el) => { sectionRefs.current[2] = el; }}
-          className="snap-start min-h-screen flex flex-col justify-center px-6"
-        >
-          <div className="max-w-3xl mx-auto w-full">
-            <SectionHeading label="Writing" title="Recent Posts" />
-            <div>
-              {posts.map((post) => (
-                <BlogPostCard key={post.slug} {...post} />
-              ))}
+          {/* Blog */}
+          <section
+            ref={(el) => { sectionRefs.current[2] = el; }}
+            className="snap-start min-h-full flex flex-col justify-center px-6"
+          >
+            <div className="max-w-3xl mx-auto w-full">
+              <SectionHeading label="Writing" title="Recent Posts" />
+              <div>
+                {posts.map((post) => (
+                  <BlogPostCard key={post.slug} {...post} />
+                ))}
+              </div>
+              <Link
+                to="/blog"
+                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Read all posts →
+              </Link>
             </div>
-            <Link
-              to="/blog"
-              className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              Read all posts →
-            </Link>
-          </div>
-          <div className="max-w-3xl mx-auto w-full mt-auto">
-            <Footer />
-          </div>
-        </section>
-      </div>
+            <div className="max-w-3xl mx-auto w-full mt-auto">
+              <Footer />
+            </div>
+          </section>
+        </div>
+      </TerminalWindow>
     </div>
   );
 };
