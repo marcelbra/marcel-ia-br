@@ -15,7 +15,7 @@ interface HeaderProps {
   disabled?: boolean;
 }
 
-const Header = ({ activeSection = "marcel", onNavigate }: HeaderProps) => {
+const Header = ({ activeSection = "marcel", onNavigate, disabled }: HeaderProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
