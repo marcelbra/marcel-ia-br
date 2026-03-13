@@ -105,10 +105,11 @@ const Index = () => {
   };
 
   const navigateToSection = (index: number) => {
-    if (sections[index] === "marcel") {
+    const target = sections[index];
+    if (target === "marcel" || target === "cv") {
       setExpanded(false);
     }
-    setActiveSection(sections[index]);
+    setActiveSection(target);
   };
 
   const terminalTitle = `~/${activeSection} — zsh — 122×37`;
