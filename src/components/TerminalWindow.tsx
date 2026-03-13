@@ -24,6 +24,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
   const [booting, setBooting] = useState(wasClosed);
+  const [bootPhase, setBootPhase] = useState<'spinning' | 'almost'>('spinning');
   const [spinFrame, setSpinFrame] = useState(0);
   const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
