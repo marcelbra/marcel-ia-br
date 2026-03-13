@@ -136,7 +136,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
                 key={i}
                 className="absolute top-1/2 left-1/2"
                 style={{
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${angle}deg) scale(${scale})`,
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(45deg) scale(${scale})`,
                   opacity: Math.max(0.1, opacity),
                 }}
               >
