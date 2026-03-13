@@ -8,6 +8,7 @@ import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
 import { useState } from "react";
 
+// ... keep existing code
 const projects = [
   {
     title: "Meridian",
