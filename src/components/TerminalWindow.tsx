@@ -20,7 +20,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children }: Te
         </span>
       </div>
       {/* Terminal body */}
-      <div className="flex-1 bg-background overflow-y-auto snap-y snap-mandatory">
+      <div className="flex-1 flex flex-col bg-background overflow-hidden">
         {children}
       </div>
     </div>
