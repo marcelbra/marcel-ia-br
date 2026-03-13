@@ -84,9 +84,8 @@ const CvSection = () => {
     setCurrentIndex(clamped);
     const container = containerRef.current;
     if (!container) return;
-    isScrolling.current = true;
+    lastScrollTime.current = Date.now();
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => { isScrolling.current = false; }, 600);
   }, [currentIndex]);
 
   useEffect(() => {
@@ -95,7 +94,7 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (isScrolling.current) return;
+      if (Date.now() - lastScrollTime.current < 700) return;
       if (Math.abs(e.deltaY) < 5) return;
       scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
     };
