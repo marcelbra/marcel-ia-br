@@ -104,3 +104,12 @@
     50% { opacity: 0; }
   }
 }
+
+/* Hide all scrollbars */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
