@@ -92,6 +92,7 @@ export type SectionName = (typeof sections)[number];
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
   const [expanded, setExpanded] = useState(false);
+  const [minimized, setMinimized] = useState(false);
 
   const navigateToSection = (index: number) => {
     if (sections[index] === "marcel") {
