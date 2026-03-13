@@ -1,4 +1,5 @@
 import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface TerminalWindowProps {
   title?: string;
@@ -26,6 +27,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const [booting, setBooting] = useState(wasClosed);
   const [bootPhase, setBootPhase] = useState<'spinning' | 'almost'>('spinning');
   const [spinFrame, setSpinFrame] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
   const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,10 +83,11 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   }, [offset]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (fullscreen) return;
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
     dragRef.current = { startX: e.clientX, startY: e.clientY, origX: offset.x, origY: offset.y };
     e.preventDefault();
-  }, [offset]);
+  }, [offset, fullscreen]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -132,7 +135,6 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
             const rad = (angle * Math.PI) / 180;
             const x = Math.cos(rad) * 12;
             const y = Math.sin(rad) * 12;
-            // How far behind the head is this position?
             const behind = (headIndex - pos + 8) % 8;
             const scale = 1 - behind * 0.09;
             const opacity = 1 - behind * 0.12;
@@ -160,6 +162,28 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     );
   }
 
+  if (fullscreen) {
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">
+        {/* Close button */}
+        <button
+          onClick={() => setFullscreen(false)}
+          className="fixed top-4 left-4 z-[10000] w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Exit fullscreen"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 2l10 10M12 2L2 12" />
+          </svg>
+        </button>
+        {/* Terminal content centered */}
+        <div className="w-full max-w-4xl max-h-[80vh] overflow-auto">
+          {children}
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -184,7 +208,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
           >
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M2 6h8"/></svg>
           </span>
-          <span className="w-3 h-3 rounded-full bg-[hsl(140,60%,48%)] group-hover/btns:bg-[hsl(140,60%,58%)] transition-colors cursor-default relative flex items-center justify-center">
+          <span
+            onClick={() => setFullscreen(true)}
+            className="w-3 h-3 rounded-full bg-[hsl(140,60%,48%)] group-hover/btns:bg-[hsl(140,60%,58%)] transition-colors cursor-default relative flex items-center justify-center"
+          >
             <svg className="w-[7px] h-[7px] opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><polygon points="3,1 10,6 3,11"/></svg>
           </span>
         </div>
