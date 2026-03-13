@@ -1,7 +1,7 @@
 const Hero = () => {
   return (
-    <section className="pt-28 pb-16 px-6">
-      <div className="max-w-3xl mx-auto">
+    <section className="max-w-3xl mx-auto w-full">
+      <div>
         <div className="mb-8 hidden md:block" aria-hidden="true">
           <pre className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold">{`
 ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
