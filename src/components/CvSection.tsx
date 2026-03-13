@@ -116,9 +116,11 @@ const CvSection = () => {
   }, [currentIndex, scrollToIndex]);
 
   return (
-    <div ref={containerRef} className="h-full overflow-hidden">
-      {experiences.map((exp, i) => (
-        <div key={i} className="h-full flex flex-col justify-center px-6">
+    <div ref={containerRef} className="h-full overflow-hidden relative">
+      <div
+        className="h-full transition-transform duration-500 ease-out"
+        style={{ transform: `translateY(-${currentIndex * 100}%)` }}
+      >
           <div className="max-w-3xl mx-auto w-full">
             {/* ASCII company logo */}
             <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
