@@ -20,6 +20,7 @@ interface TerminalWindowProps {
   onMinimize?: () => void;
   onFullscreen?: () => void;
   onClose?: () => void;
+  onBooted?: () => void;
   disableFullscreen?: boolean;
 }
 
