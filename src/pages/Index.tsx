@@ -67,63 +67,66 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header activeSection={activeSection} onNavigate={scrollToSection} />
+      <Header activeSection={activeSection} onNavigate={navigateToSection} />
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
         <div className="w-full max-w-4xl h-[70vh]">
           <TerminalWindow title={terminalTitle}>
-            <div
-              ref={containerRef}
-              className="flex-1 overflow-y-auto snap-y snap-mandatory h-full"
-            >
-              {/* Marcel / About */}
-              <section
-                ref={(el) => { sectionRefs.current[0] = el; }}
-                className="snap-start min-h-full flex flex-col justify-center px-6"
-              >
-                <Hero />
-              </section>
+            <div className="flex-1 overflow-y-auto h-full">
+              {activeSection === "marcel" && (
+                <section className="min-h-full flex flex-col justify-center px-6">
+                  <Hero />
+                </section>
+              )}
 
-              {/* Projects */}
-              <section
-                ref={(el) => { sectionRefs.current[1] = el; }}
-                className="snap-start min-h-full flex flex-col justify-center px-6"
-              >
-                <div className="max-w-3xl mx-auto w-full">
-                  <SectionHeading label="Projects" title="Selected Projects" />
-                  <div className="space-y-1">
-                    {projects.map((project) => (
-                      <ProjectCard key={project.title} {...project} />
-                    ))}
+              {activeSection === "projects" && (
+                <section className="min-h-full flex flex-col justify-center px-6">
+                  <div className="max-w-3xl mx-auto w-full">
+                    <button
+                      onClick={() => navigateToSection(0)}
+                      className="mb-4 font-mono text-sm text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      ← back
+                    </button>
+                    <SectionHeading label="Projects" title="Selected Projects" />
+                    <div className="space-y-1">
+                      {projects.map((project) => (
+                        <ProjectCard key={project.title} {...project} />
+                      ))}
+                    </div>
+                    <Link
+                      to="/projects"
+                      className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      View all projects →
+                    </Link>
                   </div>
-                  <Link
-                    to="/projects"
-                    className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    View all projects →
-                  </Link>
-                </div>
-              </section>
+                </section>
+              )}
 
-              {/* Blog */}
-              <section
-                ref={(el) => { sectionRefs.current[2] = el; }}
-                className="snap-start min-h-full flex flex-col justify-center px-6"
-              >
-                <div className="max-w-3xl mx-auto w-full">
-                  <SectionHeading label="Writing" title="Recent Posts" />
-                  <div>
-                    {posts.map((post) => (
-                      <BlogPostCard key={post.slug} {...post} />
-                    ))}
+              {activeSection === "blog" && (
+                <section className="min-h-full flex flex-col justify-center px-6">
+                  <div className="max-w-3xl mx-auto w-full">
+                    <button
+                      onClick={() => navigateToSection(0)}
+                      className="mb-4 font-mono text-sm text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      ← back
+                    </button>
+                    <SectionHeading label="Writing" title="Recent Posts" />
+                    <div>
+                      {posts.map((post) => (
+                        <BlogPostCard key={post.slug} {...post} />
+                      ))}
+                    </div>
+                    <Link
+                      to="/blog"
+                      className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Read all posts →
+                    </Link>
                   </div>
-                  <Link
-                    to="/blog"
-                    className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Read all posts →
-                  </Link>
-                </div>
-              </section>
+                </section>
+              )}
             </div>
           </TerminalWindow>
         </div>
