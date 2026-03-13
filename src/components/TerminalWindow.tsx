@@ -24,6 +24,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const wasClosed = sessionStorage.getItem(CLOSED_KEY) === "true";
   const [closed, setClosed] = useState(false);
   const [booting, setBooting] = useState(wasClosed);
+  const [bootPhase, setBootPhase] = useState<'spinning' | 'almost'>('spinning');
   const [spinFrame, setSpinFrame] = useState(0);
   const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
@@ -34,15 +35,17 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     if (wasClosed) {
       sessionStorage.removeItem(CLOSED_KEY);
       sessionStorage.removeItem(STORAGE_KEY);
-      const timer = setTimeout(() => setBooting(false), 2500);
-      return () => clearTimeout(timer);
+      setBootPhase('spinning');
+      const phaseTimer = setTimeout(() => setBootPhase('almost'), 1400);
+      const timer = setTimeout(() => setBooting(false), 2800);
+      return () => { clearTimeout(timer); clearTimeout(phaseTimer); };
     }
   }, []);
 
   // Spinner animation
   useEffect(() => {
     if (!booting) return;
-    const interval = setInterval(() => setSpinFrame((f) => (f + 1) % 360), 16);
+    const interval = setInterval(() => setSpinFrame((f) => (f + 1) % 360), 24);
     return () => clearInterval(interval);
   }, [booting]);
 
@@ -144,11 +147,14 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
               >
                 <div
                   className="w-[5px] h-[5px]"
-                  style={{ backgroundColor: `hsl(270, 80%, ${35 + behind * 4}%)` }}
+                  style={{ backgroundColor: `hsl(0, 0%, ${40 + behind * 4}%)` }}
                 />
               </div>
             );
           })}
+          {bootPhase === 'almost' && (
+            <p className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-muted-foreground whitespace-nowrap font-mono">almost done</p>
+          )}
         </div>
       </div>
     );
