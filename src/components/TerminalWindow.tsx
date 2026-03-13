@@ -17,7 +17,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children }: Te
         <div className="group/btns flex items-center gap-1.5">
           <span
             onClick={() => setClosed(true)}
-            className="w-3 h-3 rounded-full bg-[hsl(0,72%,55%)] group-hover/btns:bg-[hsl(0,72%,65%)] transition-colors cursor-pointer relative flex items-center justify-center"
+            className="w-3 h-3 rounded-full bg-[hsl(0,72%,55%)] group-hover/btns:bg-[hsl(0,72%,65%)] transition-colors cursor-default relative flex items-center justify-center"
           >
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M3 3l6 6M9 3l-6 6"/></svg>
           </span>
