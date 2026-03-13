@@ -203,7 +203,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-2xl animate-scale-in"
+      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in"
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
     >
       {/* Title bar - drag handle */}
