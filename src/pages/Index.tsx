@@ -85,7 +85,7 @@ const extraPosts = [
   },
 ];
 
-const sections = ["marcel", "projects", "blog"] as const;
+const sections = ["marcel", "cv", "projects", "blog"] as const;
 export type SectionName = (typeof sections)[number];
 
 const Index = () => {
