@@ -122,9 +122,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   if (closed) {
     return (
       <div className="h-full flex items-center justify-center">
-        <span className="font-mono text-lg text-muted-foreground/30 tracking-wide">
-          F5 / ⌘ + R
-        </span>
+        <ClosedMessage />
       </div>
     );
   }
