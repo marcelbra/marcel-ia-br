@@ -77,21 +77,25 @@ const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
-  const lastScrollTime = useRef(0);
-  const isScrolling = useRef(false);
+  const scrollLockUntil = useRef(0);
 
   const scrollToIndex = useCallback((index: number) => {
+    const now = Date.now();
+    if (now < scrollLockUntil.current) return;
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
     if (clamped === currentIndexRef.current) return;
-    if (isScrolling.current) return;
-    isScrolling.current = true;
+    scrollLockUntil.current = now + 1000;
     currentIndexRef.current = clamped;
     setCurrentIndex(clamped);
     const container = containerRef.current;
     if (!container) return;
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => { isScrolling.current = false; }, 800);
   }, []);
+
+  // Accumulate wheel delta to require intentional scroll
+  const accumulatedDelta = useRef(0);
+  const lastWheelTime = useRef(0);
+  const DELTA_THRESHOLD = 50;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -99,9 +103,21 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (isScrolling.current) return;
-      if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
+      if (Date.now() < scrollLockUntil.current) return;
+
+      const now = Date.now();
+      // Reset accumulator if gap between events is large (new gesture)
+      if (now - lastWheelTime.current > 200) {
+        accumulatedDelta.current = 0;
+      }
+      lastWheelTime.current = now;
+      accumulatedDelta.current += e.deltaY;
+
+      if (Math.abs(accumulatedDelta.current) >= DELTA_THRESHOLD) {
+        const direction = accumulatedDelta.current > 0 ? 1 : -1;
+        accumulatedDelta.current = 0;
+        scrollToIndex(currentIndexRef.current + direction);
+      }
     };
 
     let touchStartY = 0;
