@@ -7,14 +7,15 @@ interface BlogPostCardProps {
 
 const BlogPostCard = ({ title, excerpt, date, slug }: BlogPostCardProps) => {
   return (
-    <article className="group block py-5 border-b border-border last:border-b-0 line-accent">
+    <article className="group py-3 border-b border-border hover:bg-secondary/30 -mx-3 px-3 transition-colors cursor-pointer">
       <div className="flex items-start justify-between gap-4 mb-1">
-        <h3 className="font-display font-medium text-foreground group-hover:text-primary transition-colors cursor-pointer">
-          {title}
+        <h3 className="text-foreground">
+          <span className="text-ansi-red">#</span>{" "}
+          <span className="group-hover:text-ansi-yellow transition-colors">{title}</span>
         </h3>
-        <time className="font-mono text-xs text-muted-foreground shrink-0">{date}</time>
+        <time className="text-xs text-muted-foreground shrink-0">{date}</time>
       </div>
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className="text-sm text-muted-foreground pl-4">
         {excerpt}
       </p>
     </article>
