@@ -68,7 +68,17 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     setClosed(true);
     sessionStorage.setItem(CLOSED_KEY, "true");
     sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SIZE_KEY);
   };
+
+  const handleResizeDown = useCallback((edge: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    resizeRef.current = { startX: e.clientX, startY: e.clientY, origW: rect.width, origH: rect.height, edge };
+  }, []);
 
   const clampOffset = useCallback((x: number, y: number) => {
     const el = containerRef.current;
