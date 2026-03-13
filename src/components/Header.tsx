@@ -4,8 +4,9 @@ import type { SectionName } from "@/pages/Index";
 
 const links = [
   { label: "marcel", index: 0 },
-  { label: "projects", index: 1 },
-  { label: "blog", index: 2 },
+  { label: "cv", index: 1 },
+  { label: "projects", index: 2 },
+  { label: "blog", index: 3 },
 ];
 
 interface HeaderProps {

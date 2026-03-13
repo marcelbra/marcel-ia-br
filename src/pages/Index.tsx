@@ -110,6 +110,10 @@ const Index = () => {
       );
     }
 
+    if (activeSection === "cv") {
+      return <CvSection />;
+    }
+
     if (activeSection === "projects") {
       return (
         <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
