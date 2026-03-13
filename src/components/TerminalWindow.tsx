@@ -6,6 +6,7 @@ interface TerminalWindowProps {
   children: ReactNode;
   onMinimize?: () => void;
   onFullscreen?: () => void;
+  disableFullscreen?: boolean;
 }
 
 const STORAGE_KEY = "terminal-offset";
