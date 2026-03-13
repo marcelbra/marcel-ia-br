@@ -39,12 +39,9 @@ const Header = ({ activeSection = "marcel", onNavigate }: HeaderProps) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border">
       <nav className="max-w-4xl mx-auto px-6 h-12 flex items-center justify-between">
-        <button
-          onClick={() => handleNav(0)}
-          className="text-ansi-green font-bold tracking-tight hover:opacity-80 transition-opacity"
-        >
+        <span className="text-ansi-green font-bold tracking-tight">
           {currentLabel}
-        </button>
+        </span>
 
         {/* Desktop */}
         <ul className="hidden md:flex items-center gap-1">
