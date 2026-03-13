@@ -82,7 +82,10 @@ const CvSection = () => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
     if (clamped === currentIndex) return;
     setCurrentIndex(clamped);
+    const container = containerRef.current;
+    if (!container) return;
     lastScrollTime.current = Date.now();
+    container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [currentIndex]);
 
   useEffect(() => {
@@ -116,43 +119,41 @@ const CvSection = () => {
   }, [currentIndex, scrollToIndex]);
 
   return (
-    <div ref={containerRef} className="h-full overflow-hidden relative">
-      <div
-        className="h-full transition-transform duration-500 ease-out"
-        style={{ transform: `translateY(-${currentIndex * 100}%)` }}
-      >
-        {experiences.map((exp, i) => (
-          <div key={i} className="h-full flex flex-col justify-center px-6">
-            <div className="max-w-3xl mx-auto w-full">
-              <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
-                {exp.asciiLogo}
-              </pre>
-              <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
-              <div className="mt-2 mb-4 text-muted-foreground">
-                <span className={exp.color}>$</span> cat role.txt
+    <div ref={containerRef} className="h-full overflow-hidden">
+      {experiences.map((exp, i) => (
+        <div key={i} className="h-full flex flex-col justify-center px-6">
+          <div className="max-w-3xl mx-auto w-full">
+            {/* ASCII company logo */}
+            <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
+              {exp.asciiLogo}
+            </pre>
+            <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
+
+            <div className="mt-2 mb-4 text-muted-foreground">
+              <span className={exp.color}>$</span> cat role.txt
+            </div>
+
+            <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                <h3 className="text-foreground font-medium text-lg">
+                  {exp.title} <span className={exp.color}>@ {exp.company}</span>
+                </h3>
+                <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
+                  {exp.period}
+                </span>
               </div>
-              <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
-                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                  <h3 className="text-foreground font-medium text-lg">
-                    {exp.title} <span className={exp.color}>@ {exp.company}</span>
-                  </h3>
-                  <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
-                    {exp.period}
-                  </span>
-                </div>
-                <ul className="space-y-2">
-                  {exp.bullets.map((bullet, j) => (
-                    <li key={j} className="text-sm text-muted-foreground flex gap-2">
-                      <span className="text-ansi-yellow shrink-0">›</span>
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <ul className="space-y-2">
+                {exp.bullets.map((bullet, j) => (
+                  <li key={j} className="text-sm text-muted-foreground flex gap-2">
+                    <span className="text-ansi-yellow shrink-0">›</span>
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };

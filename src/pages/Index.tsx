@@ -186,9 +186,9 @@ const Index = () => {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header activeSection={activeSection} onNavigate={navigateToSection} />
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20">
         <div className="w-full max-w-4xl">
           {expanded ? (
             <div className="py-6">
@@ -197,7 +197,7 @@ const Index = () => {
           ) : (
             <div className="h-[70vh]">
               <TerminalWindow title={terminalTitle}>
-                <div className="flex-1 overflow-hidden h-full">
+                <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
               </TerminalWindow>
