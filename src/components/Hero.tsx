@@ -2,15 +2,20 @@ const Hero = () => {
   return (
     <section className="pt-28 pb-16 px-6">
       <div className="max-w-3xl mx-auto">
-        <pre className="text-ansi-blue text-xs mb-6 leading-relaxed hidden md:block" aria-hidden="true">{`
-   ___  ____   ___  ____
-  |_  ||  _ \\ / _ \\|  __|
-    | || | | | | | | |__
-    | || | | | | | |  __|
- |__| | |_| | |_| | |___
- |___ ||____/ \\___/|_____|
-        `.trim()}</pre>
-        
+        <div className="mb-8 hidden md:block" aria-hidden="true">
+          <pre className="text-ansi-yellow text-[10px] leading-[1.1] tracking-[0.05em] font-bold">{`
+ ██╗ ██████╗  ██████╗ ███████╗
+ ██║ ██╔══██╗██╔═══██╗██╔════╝
+ ██║ ██║  ██║██║   ██║█████╗  
+ ██║ ██║  ██║██║   ██║██╔══╝  
+╚██████║██████╔╝╚██████╔╝███████╗
+ ╚═════╝╚═════╝  ╚═════╝ ╚══════╝
+          `.trim()}</pre>
+        </div>
+        <div className="mb-8 md:hidden" aria-hidden="true">
+          <span className="text-ansi-yellow text-2xl font-bold tracking-widest">JDOE</span>
+        </div>
+
         <div className="text-muted-foreground mb-6">
           <span className="text-ansi-green">$</span> whoami
         </div>
