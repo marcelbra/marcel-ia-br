@@ -1,6 +1,19 @@
 import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+const ClosedMessage = () => {
+  const [bright, setBright] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setBright(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <span className={`font-mono text-lg tracking-wide transition-colors duration-700 ${bright ? 'text-muted-foreground/80' : 'text-muted-foreground/30'}`}>
+      F5 / ⌘ + R
+    </span>
+  );
+};
+
 interface TerminalWindowProps {
   title?: string;
   children: ReactNode;
@@ -122,9 +135,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   if (closed) {
     return (
       <div className="h-full flex items-center justify-center">
-        <span className="font-mono text-lg text-muted-foreground/30 tracking-wide">
-          F5 / ⌘ + R
-        </span>
+        <ClosedMessage />
       </div>
     );
   }
