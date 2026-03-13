@@ -152,6 +152,9 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
               </div>
             );
           })}
+          {bootPhase === 'almost' && (
+            <p className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-muted-foreground whitespace-nowrap font-mono">almost done</p>
+          )}
         </div>
       </div>
     );
