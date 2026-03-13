@@ -27,13 +27,33 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     const el = containerRef.current;
     if (!el) return { x, y };
     const rect = el.getBoundingClientRect();
+    const elW = rect.width;
+    const elH = rect.height;
+    // Base position = where element sits without any transform
     const baseTop = rect.top - offset.y;
-    const baseBottom = rect.bottom - offset.y;
-    // Don't let top edge go above MARGIN from viewport top
-    const minY = -baseTop + MARGIN;
-    // Don't let bottom edge go below viewport bottom minus MARGIN
-    const maxY = window.innerHeight - baseBottom - MARGIN;
-    return { x, y: Math.max(minY, Math.min(y, maxY)) };
+    const baseLeft = rect.left - offset.x;
+
+    // Find header bottom and footer top
+    const header = document.querySelector("header");
+    const footer = document.querySelector("footer");
+    const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+    const footerTop = footer ? footer.getBoundingClientRect().top : window.innerHeight;
+
+    // 1. Top: terminal top >= header bottom + margin
+    const minY = headerBottom + MARGIN - baseTop;
+    // 4. Bottom: terminal bottom <= footer top - margin
+    const maxY = footerTop - MARGIN - baseTop - elH;
+    // 2. Left: terminal right edge >= viewport left (full terminal visible)
+    //    i.e. baseLeft + x + elW >= 0  =>  x >= -baseLeft - elW + MARGIN
+    //    Actually: terminal left >= 0 + margin (no part disappears left)
+    const minX = -baseLeft + MARGIN;
+    // 3. Right: terminal right <= viewport right - margin
+    const maxX = window.innerWidth - baseLeft - elW - MARGIN;
+
+    return {
+      x: Math.max(minX, Math.min(x, maxX)),
+      y: Math.max(minY, Math.min(y, maxY)),
+    };
   }, [offset]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
