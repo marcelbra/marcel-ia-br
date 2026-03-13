@@ -42,7 +42,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   // Spinner animation
   useEffect(() => {
     if (!booting) return;
-    const interval = setInterval(() => setSpinFrame((f) => (f + 1) % spinnerFrames.length), 80);
+    const interval = setInterval(() => setSpinFrame((f) => (f + 1) % 360), 16);
     return () => clearInterval(interval);
   }, [booting]);
 
