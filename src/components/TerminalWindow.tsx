@@ -9,7 +9,10 @@ interface TerminalWindowProps {
 
 const STORAGE_KEY = "terminal-offset";
 const CLOSED_KEY = "terminal-closed";
+const SIZE_KEY = "terminal-size";
 const MARGIN = 12;
+const MIN_W = 400;
+const MIN_H = 250;
 
 const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
