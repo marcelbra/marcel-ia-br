@@ -138,7 +138,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       {/* Title bar - drag handle */}
       <div
         onMouseDown={handleMouseDown}
-        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-grab active:cursor-grabbing"
+        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default"
       >
         <div className="group/btns flex items-center gap-1.5">
           <span
