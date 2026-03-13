@@ -22,7 +22,7 @@ const Hero = () => {
         
         <p className="text-foreground mb-4">
           <span className="text-ansi-yellow">name</span>
-          <span className="text-muted-foreground">:</span> Marcel Braasch
+          <span className="text-muted-foreground">:</span> marcel braasch
         </p>
         <p className="text-foreground mb-4">
           <span className="text-ansi-yellow">role</span>
@@ -32,7 +32,7 @@ const Hero = () => {
           <span className="text-ansi-yellow">bio</span>
           <span className="text-muted-foreground">:</span>{" "}
           <span className="text-foreground">
-            Crafting thoughtful digital experiences. Building tools that make the web feel more human.
+            crafting thoughtful digital experiences. building tools that make the web feel more human.
           </span>
         </p>
 
