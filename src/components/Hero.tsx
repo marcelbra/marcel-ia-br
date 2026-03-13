@@ -1,27 +1,45 @@
 const Hero = () => {
   return (
-    <section className="pt-32 pb-20 px-6">
+    <section className="pt-28 pb-16 px-6">
       <div className="max-w-3xl mx-auto">
-        <p className="font-mono text-sm text-muted-foreground mb-4 tracking-wide">
-          Hey, I'm
+        <pre className="text-ansi-blue text-xs mb-6 leading-relaxed hidden md:block" aria-hidden="true">{`
+   ___  ____   ___  ____
+  |_  ||  _ \\ / _ \\|  __|
+    | || | | | | | | |__
+    | || | | | | | |  __|
+ |__| | |_| | |_| | |___
+ |___ ||____/ \\___/|_____|
+        `.trim()}</pre>
+        
+        <div className="text-muted-foreground mb-6">
+          <span className="text-ansi-green">$</span> whoami
+        </div>
+        
+        <p className="text-foreground mb-4">
+          <span className="text-ansi-yellow">name</span>
+          <span className="text-muted-foreground">:</span> John Doe
         </p>
-        <h1 className="font-display text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-          <span className="text-foreground">John</span>{" "}
-          <span className="text-gradient">Doe</span>
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
-          A developer & designer crafting thoughtful digital experiences. 
-          Currently building tools that make the web feel more human.
+        <p className="text-foreground mb-4">
+          <span className="text-ansi-yellow">role</span>
+          <span className="text-muted-foreground">:</span> developer & designer
         </p>
-        <div className="mt-8 flex items-center gap-6">
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="font-mono text-sm text-muted-foreground hover:text-primary transition-colors">
-            GitHub ↗
+        <p className="text-muted-foreground mb-6 max-w-lg">
+          <span className="text-ansi-yellow">bio</span>
+          <span className="text-muted-foreground">:</span>{" "}
+          <span className="text-foreground">
+            Crafting thoughtful digital experiences. Building tools that make the web feel more human.
+          </span>
+        </p>
+
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-ansi-blue hover:underline">
+            [github]
           </a>
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="font-mono text-sm text-muted-foreground hover:text-primary transition-colors">
-            Twitter ↗
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-ansi-cyan hover:underline">
+            [twitter]
           </a>
-          <a href="mailto:hello@example.com" className="font-mono text-sm text-muted-foreground hover:text-primary transition-colors">
-            Email ↗
+          <a href="mailto:hello@example.com" className="text-ansi-red hover:underline">
+            [email]
           </a>
         </div>
       </div>

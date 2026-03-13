@@ -14,9 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Outfit', 'sans-serif'],
-        body: ['Source Serif 4', 'serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -24,6 +22,14 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        ansi: {
+          red: "hsl(var(--ansi-red))",
+          green: "hsl(var(--ansi-green))",
+          yellow: "hsl(var(--ansi-yellow))",
+          blue: "hsl(var(--ansi-blue))",
+          cyan: "hsl(var(--ansi-cyan))",
+          magenta: "hsl(var(--ansi-magenta))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

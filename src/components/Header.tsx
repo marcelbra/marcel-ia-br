@@ -2,30 +2,31 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 const links = [
-  { to: "/", label: "About" },
-  { to: "/projects", label: "Projects" },
-  { to: "/blog", label: "Blog" },
+  { to: "/", label: "about" },
+  { to: "/projects", label: "projects" },
+  { to: "/blog", label: "blog" },
 ];
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-      <nav className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
-        <NavLink to="/" className="font-display font-semibold text-lg tracking-tight text-foreground hover:text-primary transition-colors">
-          jd<span className="text-primary">.</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border">
+      <nav className="max-w-3xl mx-auto px-6 h-12 flex items-center justify-between">
+        <NavLink to="/" className="text-ansi-green font-bold tracking-tight hover:opacity-80 transition-opacity">
+          ~/jdoe
         </NavLink>
 
         {/* Desktop */}
-        <ul className="hidden md:flex items-center gap-8">
-          {links.map((link) => (
-            <li key={link.to}>
+        <ul className="hidden md:flex items-center gap-1">
+          {links.map((link, i) => (
+            <li key={link.to} className="flex items-center">
+              {i > 0 && <span className="text-muted-foreground mx-1">/</span>}
               <NavLink
                 to={link.to}
                 className={({ isActive }) =>
-                  `font-mono text-sm tracking-wide transition-colors ${
-                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  `text-sm px-2 py-1 transition-colors ${
+                    isActive ? "text-ansi-yellow" : "text-muted-foreground hover:text-foreground"
                   }`
                 }
               >
@@ -38,32 +39,29 @@ const Header = () => {
         {/* Mobile toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-muted-foreground hover:text-foreground transition-colors"
+          className="md:hidden text-muted-foreground hover:text-foreground transition-colors text-sm"
           aria-label="Toggle menu"
         >
-          <div className="w-5 flex flex-col gap-1">
-            <span className={`block h-px bg-current transition-all duration-300 ${mobileOpen ? "rotate-45 translate-y-[3px]" : ""}`} />
-            <span className={`block h-px bg-current transition-all duration-300 ${mobileOpen ? "-rotate-45 -translate-y-[2px]" : ""}`} />
-          </div>
+          {mobileOpen ? "[x]" : "[=]"}
         </button>
       </nav>
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md">
-          <ul className="max-w-3xl mx-auto px-6 py-4 flex flex-col gap-3">
+        <div className="md:hidden border-t border-border bg-background">
+          <ul className="max-w-3xl mx-auto px-6 py-3 flex flex-col gap-1">
             {links.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
-                    `font-mono text-sm transition-colors block py-1 ${
-                      isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                    `text-sm block py-1 transition-colors ${
+                      isActive ? "text-ansi-yellow" : "text-muted-foreground hover:text-foreground"
                     }`
                   }
                 >
-                  {link.label}
+                  → {link.label}
                 </NavLink>
               </li>
             ))}

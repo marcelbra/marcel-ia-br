@@ -5,9 +5,15 @@ interface SectionHeadingProps {
 
 const SectionHeading = ({ label, title }: SectionHeadingProps) => {
   return (
-    <div className="mb-8">
-      <p className="font-mono text-xs text-primary tracking-widest uppercase mb-2">{label}</p>
-      <h2 className="font-display text-2xl font-semibold text-foreground">{title}</h2>
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-ansi-green">$</span>
+        <span className="text-muted-foreground">ls</span>
+        <span className="text-ansi-cyan">~/{label.toLowerCase()}</span>
+      </div>
+      <div className="border-b border-border pb-2">
+        <h2 className="text-foreground font-semibold">{title}</h2>
+      </div>
     </div>
   );
 };
