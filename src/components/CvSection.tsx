@@ -23,6 +23,7 @@ const experiences: Experience[] = [
 ██╔═██╗ ██╔═══╝ ██║╚██╗██║
 ██║  ██╗██║     ██║ ╚████║
 ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝`.trim(),
+    logo: kpnLogo,
     title: "Machine Learning Engineer",
     company: "KPN",
     period: "Sep 2025 — Present",
