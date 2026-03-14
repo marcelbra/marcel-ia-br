@@ -70,7 +70,7 @@ const Hero = () => {
         return;
       }
       setFrameIndex(i);
-    }, 150);
+    }, 80);
   }, [frames.length]);
 
   const handleWelcomeLeave = useCallback(() => {
