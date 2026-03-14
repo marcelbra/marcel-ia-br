@@ -12,6 +12,7 @@ interface Experience {
   bullets: string[];
   color: string;
   borderColor: string;
+  logoScale?: number;
 }
 
 const experiences: Experience[] = [
