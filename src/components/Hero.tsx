@@ -49,7 +49,9 @@ const Hero = () => {
   const nameRef = useRef<HTMLSpanElement>(null);
 
   const handleHover = useCallback(() => {
-    if (nameRef.current) spawnShootingStar(nameRef.current);
+    if (nameRef.current) {
+      for (let i = 0; i < 10; i++) spawnShootingStar(nameRef.current);
+    }
   }, []);
 
   return (
