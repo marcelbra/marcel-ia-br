@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import BlogPostCard from "@/components/BlogPostCard";
+import WritingPostCard from "@/components/WritingPostCard";
 import SectionHeading from "@/components/SectionHeading";
 
 export const posts = [
@@ -37,7 +37,7 @@ export const posts = [
   },
 ];
 
-const Blog = () => {
+const Writing = () => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +48,7 @@ const Blog = () => {
           <SectionHeading label="Writing" title="All Posts" />
           <div>
             {posts.map((post) => (
-              <BlogPostCard key={post.slug} {...post} />
+              <WritingPostCard key={post.slug} {...post} />
             ))}
           </div>
         </div>
@@ -58,4 +58,4 @@ const Blog = () => {
   );
 };
 
-export default Blog;
+export default Writing;

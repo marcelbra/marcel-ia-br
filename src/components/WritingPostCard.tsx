@@ -1,11 +1,11 @@
-interface BlogPostCardProps {
+interface WritingPostCardProps {
   title: string;
   excerpt: string;
   date: string;
   slug: string;
 }
 
-const BlogPostCard = ({ title, excerpt, date, slug }: BlogPostCardProps) => {
+const WritingPostCard = ({ title, excerpt, date, slug }: WritingPostCardProps) => {
   return (
     <article className="group py-3 border-b border-border hover:bg-secondary/30 -mx-3 px-3 transition-colors cursor-pointer">
       <div className="flex items-start justify-between gap-4 mb-1">
@@ -22,4 +22,4 @@ const BlogPostCard = ({ title, excerpt, date, slug }: BlogPostCardProps) => {
   );
 };
 
-export default BlogPostCard;
+export default WritingPostCard;

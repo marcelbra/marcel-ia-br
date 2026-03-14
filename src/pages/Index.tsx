@@ -3,15 +3,15 @@ import Header from "@/components/Header";
 import type { SectionName } from "@/components/Header";
 import Hero from "@/components/Hero";
 import CvSection from "@/components/CvSection";
-import BlogPostCard from "@/components/BlogPostCard";
+import WritingPostCard from "@/components/WritingPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
-import { posts } from "@/pages/Blog";
+import { posts } from "@/pages/Writing";
 import { useState } from "react";
 
 const RECENT_POSTS = 3;
 
-const sections = ["marcel", "cv", "blog"] as const;
+const sections = ["marcel", "cv", "writing"] as const;
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
@@ -62,7 +62,7 @@ const Index = () => {
       return <CvSection />;
     }
 
-    if (activeSection === "blog") {
+    if (activeSection === "writing") {
       return (
         <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
           <div className="max-w-3xl mx-auto w-full">
@@ -77,7 +77,7 @@ const Index = () => {
             <SectionHeading label="Writing" title={expanded ? "All Posts" : "Recent Posts"} />
             <div>
               {(expanded ? posts : posts.slice(0, RECENT_POSTS)).map((post) => (
-                <BlogPostCard key={post.slug} {...post} />
+                <WritingPostCard key={post.slug} {...post} />
               ))}
             </div>
             {!expanded && (
@@ -113,7 +113,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "writing") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
