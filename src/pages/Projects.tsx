@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import ProjectCard from "@/components/ProjectCard";
 import SectionHeading from "@/components/SectionHeading";
 
-const projects = [
+export const projects = [
   {
     title: "Meridian",
     description: "A minimal note-taking app with markdown support and local-first sync.",

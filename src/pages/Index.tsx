@@ -1,93 +1,20 @@
 import TerminalWindow from "@/components/TerminalWindow";
 import Header from "@/components/Header";
+import type { SectionName } from "@/components/Header";
 import Hero from "@/components/Hero";
 import CvSection from "@/components/CvSection";
 import ProjectCard from "@/components/ProjectCard";
 import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
+import { projects } from "@/pages/Projects";
+import { posts } from "@/pages/Blog";
 import { useState } from "react";
 
-// ... keep existing code
-const projects = [
-  {
-    title: "Meridian",
-    description: "A minimal note-taking app with markdown support and local-first sync.",
-    tags: ["React", "TypeScript", "IndexedDB"],
-    link: "#",
-    year: "2025",
-  },
-  {
-    title: "Chroma",
-    description: "Color palette generator that learns from your design preferences over time.",
-    tags: ["Svelte", "ML", "Design"],
-    link: "#",
-    year: "2024",
-  },
-  {
-    title: "Terrace",
-    description: "Open-source CLI for scaffolding full-stack projects with sensible defaults.",
-    tags: ["Node.js", "CLI", "Open Source"],
-    link: "#",
-    year: "2024",
-  },
-];
-
-const extraProjects = [
-  {
-    title: "Drift",
-    description: "A ambient sound mixer for focus and deep work sessions.",
-    tags: ["Web Audio", "React", "PWA"],
-    link: "#",
-    year: "2023",
-  },
-  {
-    title: "Canopy",
-    description: "Personal finance tracker with beautiful data visualizations.",
-    tags: ["D3.js", "Node.js", "PostgreSQL"],
-    link: "#",
-    year: "2023",
-  },
-];
-
-const posts = [
-  {
-    title: "On building things that last",
-    excerpt: "Why I've started caring less about trends and more about longevity in software.",
-    date: "Mar 2026",
-    slug: "building-things-that-last",
-  },
-  {
-    title: "The case for boring technology",
-    excerpt: "Sometimes the best stack is the one nobody writes blog posts about.",
-    date: "Jan 2026",
-    slug: "boring-technology",
-  },
-  {
-    title: "Designing for yourself first",
-    excerpt: "How personal projects taught me more than any client work ever did.",
-    date: "Nov 2025",
-    slug: "designing-for-yourself",
-  },
-];
-
-const extraPosts = [
-  {
-    title: "Why I left my job to build in public",
-    excerpt: "The scariest and most rewarding decision I've made in my career so far.",
-    date: "Sep 2025",
-    slug: "building-in-public",
-  },
-  {
-    title: "A love letter to the terminal",
-    excerpt: "Why I keep coming back to the command line after all these years.",
-    date: "Jul 2025",
-    slug: "love-letter-terminal",
-  },
-];
+const FEATURED_PROJECTS = 3;
+const RECENT_POSTS = 3;
 
 const sections = ["marcel", "cv", "projects", "blog"] as const;
-export type SectionName = (typeof sections)[number];
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
@@ -152,10 +79,7 @@ const Index = () => {
             )}
             <SectionHeading label="Projects" title={expanded ? "All Projects" : "Selected Projects"} />
             <div className="space-y-1">
-              {projects.map((project) => (
-                <ProjectCard key={project.title} {...project} />
-              ))}
-              {expanded && extraProjects.map((project) => (
+              {(expanded ? projects : projects.slice(0, FEATURED_PROJECTS)).map((project) => (
                 <ProjectCard key={project.title} {...project} />
               ))}
             </div>
@@ -186,10 +110,7 @@ const Index = () => {
             )}
             <SectionHeading label="Writing" title={expanded ? "All Posts" : "Recent Posts"} />
             <div>
-              {posts.map((post) => (
-                <BlogPostCard key={post.slug} {...post} />
-              ))}
-              {expanded && extraPosts.map((post) => (
+              {(expanded ? posts : posts.slice(0, RECENT_POSTS)).map((post) => (
                 <BlogPostCard key={post.slug} {...post} />
               ))}
             </div>

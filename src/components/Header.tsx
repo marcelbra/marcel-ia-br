@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import type { SectionName } from "@/pages/Index";
+
+const sections = ["marcel", "cv", "projects", "blog"] as const;
+export type SectionName = (typeof sections)[number];
 
 const links = [
   { label: "marcel", index: 0 },

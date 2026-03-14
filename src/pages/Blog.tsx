@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 
-const posts = [
+export const posts = [
   {
     title: "On building things that last",
     excerpt: "Why I've started caring less about trends and more about longevity in software.",
