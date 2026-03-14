@@ -1,4 +1,6 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, lazy, Suspense } from "react";
+
+const CvWheel = lazy(() => import("./CvWheel"));
 
 interface Experience {
   asciiLogo: string;
