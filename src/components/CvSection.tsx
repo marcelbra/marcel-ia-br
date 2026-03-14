@@ -27,10 +27,10 @@ const experiences: Experience[] = [
     color: "text-ansi-green",
     borderColor: "border-ansi-green/30",
     bullets: [
-      "Building and deploying ML models for network optimization",
-      "Developing real-time anomaly detection pipelines at scale",
-      "Collaborating with cross-functional teams on AI-driven products",
-      "Improving model inference latency by 3x through optimization",
+      "ML models for network optimization",
+      "Real-time anomaly detection at scale",
+      "Cross-functional AI product development",
+      "3x model inference latency improvement",
     ],
   },
   {
