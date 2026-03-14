@@ -160,7 +160,7 @@ const CvSection = () => {
       </div>
 
       {/* Right: 3D wheel */}
-      <div className="hidden md:flex w-48 items-center justify-center">
+      <div className="hidden md:flex w-48 h-full items-center justify-center" style={{ minHeight: '300px' }}>
         <Suspense fallback={null}>
           <CvWheel currentIndex={currentIndex} />
         </Suspense>
