@@ -13,6 +13,7 @@ interface Experience {
   color: string;
   borderColor: string;
   logoScale?: number;
+  logoOffset?: number;
 }
 
 const experiences: Experience[] = [
@@ -72,7 +73,8 @@ const experiences: Experience[] = [
     period: "Jun 2022 — Dec 2023",
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
-    logoScale: 1.35,
+    logoScale: 1.5,
+    logoOffset: 4,
     bullets: [
       "Developed and deployed machine learning solutions for enterprise clients",
       "Built NLP pipelines for document classification and extraction",
@@ -133,7 +135,7 @@ const CvSection = () => {
         <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-4 mb-6">
-              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={exp.logoScale ? { transform: `scale(${exp.logoScale})` } : undefined} />
+              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
               <div>
                 <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block`} aria-hidden="true">
                   {exp.asciiLogo}
