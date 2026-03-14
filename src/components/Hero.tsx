@@ -1,6 +1,57 @@
 import avatar from "@/assets/avatar.png";
+import { useCallback, useRef } from "react";
+
+const STAR_COLORS = ["#fabd2f", "#83a598", "#fe8019", "#b8bb26", "#d3869b"];
+
+function spawnShootingStar(originEl: HTMLElement) {
+  const rect = originEl.getBoundingClientRect();
+  const x = rect.right;
+  const y = rect.top + rect.height / 2;
+
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 120 + Math.random() * 100; // px per sec
+  const color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+
+  const star = document.createElement("div");
+  star.style.position = "fixed";
+  star.style.left = `${x}px`;
+  star.style.top = `${y}px`;
+  star.style.width = "4px";
+  star.style.height = "4px";
+  star.style.background = color;
+  star.style.boxShadow = `0 0 6px ${color}, 0 0 2px ${color}`;
+  star.style.imageRendering = "pixelated";
+  star.style.pointerEvents = "none";
+  star.style.zIndex = "9999";
+  document.body.appendChild(star);
+
+  const dx = Math.cos(angle) * speed;
+  const dy = Math.sin(angle) * speed;
+  let startTime: number | null = null;
+
+  function tick(time: number) {
+    if (!startTime) startTime = time;
+    const elapsed = (time - startTime) / 1000;
+    if (elapsed > 3) {
+      star.remove();
+      return;
+    }
+    const opacity = Math.max(0, 1 - elapsed / 3);
+    star.style.left = `${x + dx * elapsed}px`;
+    star.style.top = `${y + dy * elapsed}px`;
+    star.style.opacity = String(opacity);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
 
 const Hero = () => {
+  const nameRef = useRef<HTMLSpanElement>(null);
+
+  const handleHover = useCallback(() => {
+    if (nameRef.current) spawnShootingStar(nameRef.current);
+  }, []);
+
   return (
     <section className="max-w-3xl mx-auto w-full">
       <div>
@@ -26,7 +77,14 @@ const Hero = () => {
         
         <p className="text-foreground mb-4">
           <span className="text-ansi-yellow">name</span>
-          <span className="text-muted-foreground">:</span> marcel braasch
+          <span className="text-muted-foreground">:</span>{" "}
+          <span
+            ref={nameRef}
+            onMouseEnter={handleHover}
+            className="cursor-default"
+          >
+            marcel braasch
+          </span>
         </p>
         <p className="text-foreground mb-4">
           <span className="text-ansi-yellow">role</span>
