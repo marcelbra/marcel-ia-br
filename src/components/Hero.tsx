@@ -1,8 +1,10 @@
+import avatar from "@/assets/avatar.png";
+
 const Hero = () => {
   return (
     <section className="max-w-3xl mx-auto w-full">
       <div>
-        <div className="mb-8 hidden md:block" aria-hidden="true">
+        <div className="mb-8 hidden md:flex items-center gap-6" aria-hidden="true">
           <pre className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold">{`
 ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
 ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝
@@ -11,9 +13,11 @@ const Hero = () => {
 ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
+          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-24 w-auto" />
         </div>
-        <div className="mb-8 md:hidden" aria-hidden="true">
+        <div className="mb-8 md:hidden flex items-center gap-4" aria-hidden="true">
           <span className="text-ansi-yellow text-2xl font-bold tracking-widest">JDOE</span>
+          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-16 w-auto" />
         </div>
 
         <div className="text-muted-foreground mb-6">
