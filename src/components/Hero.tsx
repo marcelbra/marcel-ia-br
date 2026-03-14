@@ -4,7 +4,7 @@ const Hero = () => {
   return (
     <section className="max-w-3xl mx-auto w-full">
       <div>
-        <div className="mb-8 hidden md:flex items-center gap-6" aria-hidden="true">
+        <div className="mb-8 hidden md:flex items-end gap-6" aria-hidden="true">
           <pre className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold">{`
 ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
 ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝
