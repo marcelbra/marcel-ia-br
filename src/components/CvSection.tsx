@@ -44,6 +44,7 @@ const experiences: Experience[] = [
 ██║╚██╗██║██╔══╝  ██║███╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝  
 ██║ ╚████║███████╗╚███╔███╔╝   ██║   ╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim(),
+    logo: newtoneLogo,
     title: "Founding AI Engineer",
     company: "Newtone",
     period: "Jan 2024 — Aug 2025",
