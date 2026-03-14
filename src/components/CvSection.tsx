@@ -67,10 +67,10 @@ const experiences: Experience[] = [
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
     bullets: [
-      "Developed and deployed machine learning solutions for enterprise clients",
-      "Built NLP pipelines for document classification and extraction",
-      "Created dashboards and tooling to monitor model performance",
-      "Mentored junior engineers on ML best practices and workflows",
+      "Enterprise ML solutions deployment",
+      "NLP pipelines for doc classification",
+      "Model performance monitoring dashboards",
+      "Mentored junior engineers on ML practices",
     ],
   },
 ];
