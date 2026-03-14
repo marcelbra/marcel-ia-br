@@ -1,5 +1,8 @@
-import avatar from "@/assets/avatar.png";
-import { useCallback, useRef } from "react";
+import avatar1 from "@/assets/avatar1.png";
+import avatar2 from "@/assets/avatar2.png";
+import avatar3 from "@/assets/avatar3.png";
+import avatar4 from "@/assets/avatar4.png";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STAR_COLOR = "#fabd2f";
 
