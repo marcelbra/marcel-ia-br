@@ -1,12 +1,16 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import kpnLogo from "@/assets/kpn-logo.png";
+import newtoneLogo from "@/assets/newtone-logo.png";
+import eraneosLogo from "@/assets/eraneos-logo.png";
 
 interface Experience {
   asciiLogo: string;
+  logo: string;
   title: string;
   company: string;
   period: string;
   bullets: string[];
-  color: string; // tailwind text color class using ansi tokens
+  color: string;
   borderColor: string;
 }
 
