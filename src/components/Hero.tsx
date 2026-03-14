@@ -75,9 +75,18 @@ const Hero = () => {
 
   const handleWelcomeLeave = useCallback(() => {
     if (animRef.current) clearInterval(animRef.current);
-    animRef.current = null;
-    setFrameIndex(0);
-  }, []);
+    let i = frames.length - 1;
+    animRef.current = setInterval(() => {
+      i--;
+      if (i <= 0) {
+        setFrameIndex(0);
+        if (animRef.current) clearInterval(animRef.current);
+        animRef.current = null;
+        return;
+      }
+      setFrameIndex(i);
+    }, 80);
+  }, [frames.length]);
 
   useEffect(() => {
     return () => {
