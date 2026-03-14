@@ -62,11 +62,14 @@ const Hero = () => {
   }, []);
 
   const handleWelcomeEnter = useCallback(() => {
+    if (animRef.current) clearInterval(animRef.current);
     let i = 0;
+    setFrameIndex(0);
     animRef.current = setInterval(() => {
       i++;
       if (i >= frames.length) {
         if (animRef.current) clearInterval(animRef.current);
+        animRef.current = null;
         return;
       }
       setFrameIndex(i);
@@ -78,7 +81,7 @@ const Hero = () => {
     let i = frames.length - 1;
     animRef.current = setInterval(() => {
       i--;
-      if (i <= 0) {
+      if (i < 0) {
         setFrameIndex(0);
         if (animRef.current) clearInterval(animRef.current);
         animRef.current = null;
