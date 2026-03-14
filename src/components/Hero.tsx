@@ -10,7 +10,7 @@ function spawnShootingStar(originEl: HTMLElement) {
 
   const angle = Math.random() * Math.PI * 2;
   const speed = 120 + Math.random() * 100; // px per sec
-  const color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+  const color = STAR_COLOR;
 
   const star = document.createElement("div");
   star.style.position = "fixed";
