@@ -78,17 +78,20 @@ const experiences: Experience[] = [
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const lastScrollTime = useRef(0);
+  const currentIndexRef = useRef(0);
+  const isScrolling = useRef(false);
+  const wheelEndTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  const scrollToIndex = useCallback((index: number) => {
+  const scrollToIndex = useCallback((index: number): boolean => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndex) return;
+    if (clamped === currentIndexRef.current) return false;
+    currentIndexRef.current = clamped;
     setCurrentIndex(clamped);
     const container = containerRef.current;
-    if (!container) return;
-    lastScrollTime.current = Date.now();
+    if (!container) return false;
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [currentIndex]);
+    return true;
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -96,18 +99,29 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (Date.now() - lastScrollTime.current < 700) return;
       if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
+
+      // Reset the end-of-gesture timer on every wheel event
+      clearTimeout(wheelEndTimer.current);
+      wheelEndTimer.current = setTimeout(() => {
+        isScrolling.current = false;
+      }, 200);
+
+      // Only advance once per gesture
+      if (isScrolling.current) return;
+      const didScroll = scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
+      if (didScroll) isScrolling.current = true;
     };
 
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (isScrolling.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
+      isScrolling.current = true;
+      setTimeout(() => { isScrolling.current = false; }, 700);
+      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -117,8 +131,9 @@ const CvSection = () => {
       container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
+      clearTimeout(wheelEndTimer.current);
     };
-  }, [currentIndex, scrollToIndex]);
+  }, [scrollToIndex]);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden flex">
