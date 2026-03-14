@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
-const sections = ["marcel", "cv", "projects", "blog"] as const;
+const sections = ["marcel", "cv", "blog"] as const;
 export type SectionName = (typeof sections)[number];
 
 const links = [
   { label: "marcel", index: 0 },
   { label: "cv", index: 1 },
-  { label: "projects", index: 2 },
-  { label: "blog", index: 3 },
+  { label: "blog", index: 2 },
 ];
 
 interface HeaderProps {
@@ -24,11 +23,9 @@ const Header = ({ activeSection = "marcel", onNavigate, disabled }: HeaderProps)
 
   const currentLabel = isHome
     ? `~/${activeSection}`
-    : location.pathname === "/projects"
-      ? "~/projects"
-      : location.pathname === "/blog"
-        ? "~/blog"
-        : "~/marcel";
+    : location.pathname === "/blog"
+      ? "~/blog"
+      : "~/marcel";
 
   const handleNav = (index: number) => {
     if (isHome && onNavigate) {

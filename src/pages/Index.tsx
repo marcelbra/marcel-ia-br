@@ -3,18 +3,15 @@ import Header from "@/components/Header";
 import type { SectionName } from "@/components/Header";
 import Hero from "@/components/Hero";
 import CvSection from "@/components/CvSection";
-import ProjectCard from "@/components/ProjectCard";
 import BlogPostCard from "@/components/BlogPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
-import { projects } from "@/pages/Projects";
 import { posts } from "@/pages/Blog";
 import { useState } from "react";
 
-const FEATURED_PROJECTS = 3;
 const RECENT_POSTS = 3;
 
-const sections = ["marcel", "cv", "projects", "blog"] as const;
+const sections = ["marcel", "cv", "blog"] as const;
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
@@ -63,37 +60,6 @@ const Index = () => {
 
     if (activeSection === "cv") {
       return <CvSection />;
-    }
-
-    if (activeSection === "projects") {
-      return (
-        <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
-          <div className="max-w-3xl mx-auto w-full">
-            {expanded && (
-              <button
-                onClick={() => setExpanded(false)}
-                className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-              >
-                ← back
-              </button>
-            )}
-            <SectionHeading label="Projects" title={expanded ? "All Projects" : "Selected Projects"} />
-            <div className="space-y-1">
-              {(expanded ? projects : projects.slice(0, FEATURED_PROJECTS)).map((project) => (
-                <ProjectCard key={project.title} {...project} />
-              ))}
-            </div>
-            {!expanded && (
-              <button
-                onClick={() => setExpanded(true)}
-                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                View all projects →
-              </button>
-            )}
-          </div>
-        </section>
-      );
     }
 
     if (activeSection === "blog") {
@@ -147,7 +113,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "projects" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "blog") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>
