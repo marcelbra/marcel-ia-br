@@ -50,11 +50,39 @@ function spawnShootingStar(originEl: HTMLElement) {
 
 const Hero = () => {
   const nameRef = useRef<HTMLSpanElement>(null);
+  const welcomeRef = useRef<HTMLPreElement>(null);
+  const frames = [avatar1, avatar2, avatar3, avatar4];
+  const [frameIndex, setFrameIndex] = useState(0);
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleHover = useCallback(() => {
     if (nameRef.current) {
       for (let i = 0; i < 10; i++) spawnShootingStar(nameRef.current);
     }
+  }, []);
+
+  const handleWelcomeEnter = useCallback(() => {
+    let i = 0;
+    animRef.current = setInterval(() => {
+      i++;
+      if (i >= frames.length) {
+        if (animRef.current) clearInterval(animRef.current);
+        return;
+      }
+      setFrameIndex(i);
+    }, 150);
+  }, [frames.length]);
+
+  const handleWelcomeLeave = useCallback(() => {
+    if (animRef.current) clearInterval(animRef.current);
+    animRef.current = null;
+    setFrameIndex(0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (animRef.current) clearInterval(animRef.current);
+    };
   }, []);
 
   return (
