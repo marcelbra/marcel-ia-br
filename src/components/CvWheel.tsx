@@ -83,8 +83,8 @@ interface CvWheelProps {
 
 const CvWheel = ({ currentIndex }: CvWheelProps) => {
   return (
-    <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
+    <div className="w-full h-full" style={{ minHeight: '300px' }}>
+      <Canvas camera={{ position: [0, 0, 6], fov: 50 }} style={{ width: '100%', height: '100%' }}>
         <ambientLight intensity={0.5} />
         <pointLight position={[5, 5, 5]} intensity={0.8} />
         <Wheel targetIndex={currentIndex} />
