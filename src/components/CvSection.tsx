@@ -47,10 +47,10 @@ const experiences: Experience[] = [
     color: "text-ansi-magenta",
     borderColor: "border-ansi-magenta/30",
     bullets: [
-      "Co-founded and built AI-powered products from zero to launch",
-      "Designed end-to-end ML pipelines for natural language understanding",
-      "Led technical architecture decisions for scalable AI systems",
-      "Shipped production models serving thousands of daily users",
+      "Built AI products from zero to launch",
+      "End-to-end NLU pipelines",
+      "Technical architecture for scalable AI",
+      "Production models serving thousands daily",
     ],
   },
   {
