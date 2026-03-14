@@ -5,8 +5,8 @@ const STAR_COLOR = "#fabd2f";
 
 function spawnShootingStar(originEl: HTMLElement) {
   const rect = originEl.getBoundingClientRect();
-  const x = rect.right;
-  const y = rect.top + rect.height / 2;
+  const x = rect.left + Math.random() * rect.width;
+  const y = rect.top + Math.random() * rect.height;
 
   const angle = Math.random() * Math.PI * 2;
   const speed = 120 + Math.random() * 100; // px per sec
