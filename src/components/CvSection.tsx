@@ -1,6 +1,4 @@
-import { useRef, useState, useCallback, useEffect, lazy, Suspense } from "react";
-
-const CvWheel = lazy(() => import("./CvWheel"));
+import { useRef, useState, useCallback, useEffect } from "react";
 
 interface Experience {
   asciiLogo: string;
@@ -27,10 +25,10 @@ const experiences: Experience[] = [
     color: "text-ansi-green",
     borderColor: "border-ansi-green/30",
     bullets: [
-      "ML models for network optimization",
-      "Real-time anomaly detection at scale",
-      "Cross-functional AI product development",
-      "3x model inference latency improvement",
+      "Building and deploying ML models for network optimization",
+      "Developing real-time anomaly detection pipelines at scale",
+      "Collaborating with cross-functional teams on AI-driven products",
+      "Improving model inference latency by 3x through optimization",
     ],
   },
   {
@@ -47,10 +45,10 @@ const experiences: Experience[] = [
     color: "text-ansi-magenta",
     borderColor: "border-ansi-magenta/30",
     bullets: [
-      "Built AI products from zero to launch",
-      "End-to-end NLU pipelines",
-      "Technical architecture for scalable AI",
-      "Production models serving thousands daily",
+      "Co-founded and built AI-powered products from zero to launch",
+      "Designed end-to-end ML pipelines for natural language understanding",
+      "Led technical architecture decisions for scalable AI systems",
+      "Shipped production models serving thousands of daily users",
     ],
   },
   {
@@ -67,10 +65,10 @@ const experiences: Experience[] = [
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
     bullets: [
-      "Enterprise ML solutions deployment",
-      "NLP pipelines for doc classification",
-      "Model performance monitoring dashboards",
-      "Mentored junior engineers on ML practices",
+      "Developed and deployed machine learning solutions for enterprise clients",
+      "Built NLP pipelines for document classification and extraction",
+      "Created dashboards and tooling to monitor model performance",
+      "Mentored junior engineers on ML best practices and workflows",
     ],
   },
 ];
@@ -78,20 +76,17 @@ const experiences: Experience[] = [
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const currentIndexRef = useRef(0);
-  const isScrolling = useRef(false);
-  const wheelEndTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastScrollTime = useRef(0);
 
-  const scrollToIndex = useCallback((index: number): boolean => {
+  const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndexRef.current) return false;
-    currentIndexRef.current = clamped;
+    if (clamped === currentIndex) return;
     setCurrentIndex(clamped);
     const container = containerRef.current;
-    if (!container) return false;
+    if (!container) return;
+    lastScrollTime.current = Date.now();
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    return true;
-  }, []);
+  }, [currentIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -99,29 +94,18 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      if (Date.now() - lastScrollTime.current < 700) return;
       if (Math.abs(e.deltaY) < 5) return;
-
-      // Reset the end-of-gesture timer on every wheel event
-      clearTimeout(wheelEndTimer.current);
-      wheelEndTimer.current = setTimeout(() => {
-        isScrolling.current = false;
-      }, 200);
-
-      // Only advance once per gesture
-      if (isScrolling.current) return;
-      const didScroll = scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
-      if (didScroll) isScrolling.current = true;
+      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
     };
 
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isScrolling.current) return;
+      if (Date.now() - lastScrollTime.current < 700) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
-      isScrolling.current = true;
-      setTimeout(() => { isScrolling.current = false; }, 700);
-      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
+      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -131,55 +115,45 @@ const CvSection = () => {
       container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
-      clearTimeout(wheelEndTimer.current);
     };
-  }, [scrollToIndex]);
+  }, [currentIndex, scrollToIndex]);
 
   return (
-    <div ref={containerRef} className="h-full overflow-hidden flex">
-      {/* Left: experience cards */}
-      <div className="flex-1 h-full">
-        {experiences.map((exp, i) => (
-          <div key={i} className="h-full flex flex-col justify-center px-6">
-            <div className="max-w-2xl mx-auto w-full">
-              <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
-                {exp.asciiLogo}
-              </pre>
-              <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
+    <div ref={containerRef} className="h-full overflow-hidden">
+      {experiences.map((exp, i) => (
+        <div key={i} className="h-full flex flex-col justify-center px-6">
+          <div className="max-w-3xl mx-auto w-full">
+            {/* ASCII company logo */}
+            <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
+              {exp.asciiLogo}
+            </pre>
+            <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
 
-              <div className="mt-2 mb-4 text-muted-foreground">
-                <span className={exp.color}>$</span> cat role.txt
-              </div>
+            <div className="mt-2 mb-4 text-muted-foreground">
+              <span className={exp.color}>$</span> cat role.txt
+            </div>
 
-              <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
-                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                  <h3 className="text-foreground font-medium text-lg">
-                    {exp.title} <span className={exp.color}>@ {exp.company}</span>
-                  </h3>
-                  <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
-                    {exp.period}
-                  </span>
-                </div>
-                <ul className="space-y-2">
-                  {exp.bullets.map((bullet, j) => (
-                    <li key={j} className="text-sm text-muted-foreground flex gap-2">
-                      <span className="text-ansi-yellow shrink-0">›</span>
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                <h3 className="text-foreground font-medium text-lg">
+                  {exp.title} <span className={exp.color}>@ {exp.company}</span>
+                </h3>
+                <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
+                  {exp.period}
+                </span>
               </div>
+              <ul className="space-y-2">
+                {exp.bullets.map((bullet, j) => (
+                  <li key={j} className="text-sm text-muted-foreground flex gap-2">
+                    <span className="text-ansi-yellow shrink-0">›</span>
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Right: 3D wheel */}
-      <div className="hidden md:flex w-48 h-full items-center justify-center" style={{ minHeight: '300px' }}>
-        <Suspense fallback={null}>
-          <CvWheel currentIndex={currentIndex} />
-        </Suspense>
-      </div>
+        </div>
+      ))}
     </div>
   );
 };
