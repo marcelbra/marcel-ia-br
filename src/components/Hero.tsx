@@ -13,7 +13,7 @@ const Hero = () => {
 ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
-          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-24 w-auto" />
+          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-[7.8rem] w-auto" />
         </div>
         <div className="mb-8 md:hidden flex items-center gap-4" aria-hidden="true">
           <span className="text-ansi-yellow text-2xl font-bold tracking-widest">JDOE</span>
