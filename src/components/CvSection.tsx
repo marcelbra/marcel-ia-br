@@ -72,7 +72,8 @@ const experiences: Experience[] = [
     period: "Jun 2022 — Dec 2023",
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
-    logoScale: 1.35,
+    logoScale: 1.5,
+    logoOffset: 4,
     bullets: [
       "Developed and deployed machine learning solutions for enterprise clients",
       "Built NLP pipelines for document classification and extraction",
