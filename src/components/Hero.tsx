@@ -1,7 +1,7 @@
 import avatar from "@/assets/avatar.png";
 import { useCallback, useRef } from "react";
 
-const STAR_COLORS = ["#fabd2f", "#83a598", "#fe8019", "#b8bb26", "#d3869b"];
+const STAR_COLOR = "#fabd2f";
 
 function spawnShootingStar(originEl: HTMLElement) {
   const rect = originEl.getBoundingClientRect();
@@ -10,7 +10,7 @@ function spawnShootingStar(originEl: HTMLElement) {
 
   const angle = Math.random() * Math.PI * 2;
   const speed = 120 + Math.random() * 100; // px per sec
-  const color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+  const color = STAR_COLOR;
 
   const star = document.createElement("div");
   star.style.position = "fixed";
@@ -49,7 +49,9 @@ const Hero = () => {
   const nameRef = useRef<HTMLSpanElement>(null);
 
   const handleHover = useCallback(() => {
-    if (nameRef.current) spawnShootingStar(nameRef.current);
+    if (nameRef.current) {
+      for (let i = 0; i < 10; i++) spawnShootingStar(nameRef.current);
+    }
   }, []);
 
   return (
