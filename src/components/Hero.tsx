@@ -89,7 +89,12 @@ const Hero = () => {
     <section className="max-w-3xl mx-auto w-full">
       <div>
         <div className="mb-8 hidden md:flex items-end gap-6" aria-hidden="true">
-          <pre className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold">{`
+          <pre
+            ref={welcomeRef}
+            onMouseEnter={handleWelcomeEnter}
+            onMouseLeave={handleWelcomeLeave}
+            className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold cursor-default"
+          >{`
 ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
 ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝
 ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  
@@ -97,11 +102,11 @@ const Hero = () => {
 ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
-          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-1rem]" />
+          <img src={frames[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-1rem]" />
         </div>
         <div className="mb-8 md:hidden flex items-center gap-4" aria-hidden="true">
           <span className="text-ansi-yellow text-2xl font-bold tracking-widest">JDOE</span>
-          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-16 w-auto" />
+          <img src={frames[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-16 w-auto" />
         </div>
 
         <div className="text-muted-foreground mb-6">
