@@ -131,7 +131,7 @@ const CvSection = () => {
         <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-4 mb-6">
-              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" />
+              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={exp.logoScale ? { transform: `scale(${exp.logoScale})` } : undefined} />
               <div>
                 <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block`} aria-hidden="true">
                   {exp.asciiLogo}
