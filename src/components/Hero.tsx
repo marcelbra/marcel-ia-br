@@ -1,7 +1,7 @@
 import avatar from "@/assets/avatar.png";
 import { useCallback, useRef } from "react";
 
-const STAR_COLORS = ["#fabd2f", "#83a598", "#fe8019", "#b8bb26", "#d3869b"];
+const STAR_COLOR = "#fabd2f";
 
 function spawnShootingStar(originEl: HTMLElement) {
   const rect = originEl.getBoundingClientRect();
