@@ -13,6 +13,7 @@ interface Experience {
   color: string;
   borderColor: string;
   logoScale?: number;
+  logoOffset?: number;
 }
 
 const experiences: Experience[] = [
