@@ -1,5 +1,8 @@
-import avatar from "@/assets/avatar.png";
-import { useCallback, useRef } from "react";
+import avatar1 from "@/assets/avatar1.png";
+import avatar2 from "@/assets/avatar2.png";
+import avatar3 from "@/assets/avatar3.png";
+import avatar4 from "@/assets/avatar4.png";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STAR_COLOR = "#fabd2f";
 
@@ -47,6 +50,10 @@ function spawnShootingStar(originEl: HTMLElement) {
 
 const Hero = () => {
   const nameRef = useRef<HTMLSpanElement>(null);
+  const welcomeRef = useRef<HTMLPreElement>(null);
+  const frames = [avatar1, avatar2, avatar3, avatar4];
+  const [frameIndex, setFrameIndex] = useState(0);
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleHover = useCallback(() => {
     if (nameRef.current) {
@@ -54,11 +61,40 @@ const Hero = () => {
     }
   }, []);
 
+  const handleWelcomeEnter = useCallback(() => {
+    let i = 0;
+    animRef.current = setInterval(() => {
+      i++;
+      if (i >= frames.length) {
+        if (animRef.current) clearInterval(animRef.current);
+        return;
+      }
+      setFrameIndex(i);
+    }, 150);
+  }, [frames.length]);
+
+  const handleWelcomeLeave = useCallback(() => {
+    if (animRef.current) clearInterval(animRef.current);
+    animRef.current = null;
+    setFrameIndex(0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (animRef.current) clearInterval(animRef.current);
+    };
+  }, []);
+
   return (
     <section className="max-w-3xl mx-auto w-full">
       <div>
         <div className="mb-8 hidden md:flex items-end gap-6" aria-hidden="true">
-          <pre className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold">{`
+          <pre
+            ref={welcomeRef}
+            onMouseEnter={handleWelcomeEnter}
+            onMouseLeave={handleWelcomeLeave}
+            className="text-ansi-yellow text-[10px] leading-[1.15] tracking-[0.02em] font-bold cursor-default"
+          >{`
 ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
 ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝
 ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  
@@ -66,11 +102,11 @@ const Hero = () => {
 ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
-          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-1rem]" />
+          <img src={frames[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-1rem]" />
         </div>
         <div className="mb-8 md:hidden flex items-center gap-4" aria-hidden="true">
           <span className="text-ansi-yellow text-2xl font-bold tracking-widest">JDOE</span>
-          <img src={avatar} alt="Marcel Braasch pixel avatar" className="h-16 w-auto" />
+          <img src={frames[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-16 w-auto" />
         </div>
 
         <div className="text-muted-foreground mb-6">
