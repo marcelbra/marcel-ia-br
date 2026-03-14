@@ -130,11 +130,15 @@ const CvSection = () => {
       {experiences.map((exp, i) => (
         <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
-            {/* ASCII company logo */}
-            <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold mb-6 hidden md:block`} aria-hidden="true">
-              {exp.asciiLogo}
-            </pre>
-            <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
+            <div className="flex items-center gap-4 mb-6">
+              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" />
+              <div>
+                <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block`} aria-hidden="true">
+                  {exp.asciiLogo}
+                </pre>
+                <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
+              </div>
+            </div>
 
             <div className="mt-2 mb-4 text-muted-foreground">
               <span className={exp.color}>$</span> cat role.txt
