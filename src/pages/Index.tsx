@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import type { SectionName } from "@/components/Header";
 import Hero from "@/components/Hero";
 import CvSection from "@/components/CvSection";
+import AcademicsSection from "@/components/AcademicsSection";
 import WritingPostCard from "@/components/WritingPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
@@ -11,7 +12,7 @@ import { useState } from "react";
 
 const RECENT_POSTS = 3;
 
-const sections = ["marcel", "cv", "writing"] as const;
+const sections = ["marcel", "cv", "academics", "writing"] as const;
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<SectionName>("marcel");
@@ -31,7 +32,7 @@ const Index = () => {
 
   const navigateToSection = (index: number) => {
     const target = sections[index];
-    if (target === "marcel" || target === "cv") {
+    if (target === "marcel" || target === "cv" || target === "academics") {
       setExpanded(false);
     }
     setActiveSection(target);
@@ -60,6 +61,10 @@ const Index = () => {
 
     if (activeSection === "cv") {
       return <CvSection />;
+    }
+
+    if (activeSection === "academics") {
+      return <AcademicsSection />;
     }
 
     if (activeSection === "writing") {
@@ -113,7 +118,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="h-[70vh]">
-              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "writing") setExpanded(true); }} disableFullscreen={activeSection === "cv"}>
+              <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "writing") setExpanded(true); }} disableFullscreen={activeSection === "cv" || activeSection === "academics"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
                 </div>

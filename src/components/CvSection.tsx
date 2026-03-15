@@ -14,6 +14,7 @@ interface Experience {
   borderColor: string;
   logoScale?: number;
   logoOffset?: number;
+  command?: string;
 }
 
 const experiences: Experience[] = [
@@ -31,6 +32,7 @@ const experiences: Experience[] = [
     period: "Sep 2025 — Present",
     color: "text-ansi-green",
     borderColor: "border-ansi-green/30",
+    command: "cat cv/role-1.txt",
     bullets: [
       "Building and deploying ML models for network optimization",
       "Developing real-time anomaly detection pipelines at scale",
@@ -52,6 +54,7 @@ const experiences: Experience[] = [
     period: "Jan 2024 — Aug 2025",
     color: "text-ansi-magenta",
     borderColor: "border-ansi-magenta/30",
+    command: "cat cv/role-2.txt",
     bullets: [
       "Co-founded and built AI-powered products from zero to launch",
       "Designed end-to-end ML pipelines for natural language understanding",
@@ -73,6 +76,7 @@ const experiences: Experience[] = [
     period: "Jun 2022 — Dec 2023",
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
+    command: "cat cv/role-3.txt",
     logoScale: 1.5,
     logoOffset: 4,
     bullets: [
@@ -145,7 +149,7 @@ const CvSection = () => {
             </div>
 
             <div className="mt-2 mb-4 text-muted-foreground">
-              <span className={exp.color}>$</span> cat role.txt
+              <span className={exp.color}>$</span> {exp.command ?? "cat role.txt"}
             </div>
 
             <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>

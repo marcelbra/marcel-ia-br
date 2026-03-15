@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
-const sections = ["marcel", "cv", "writing"] as const;
+const sections = ["marcel", "cv", "academics", "writing"] as const;
 export type SectionName = (typeof sections)[number];
 
 const links = [
   { label: "marcel", index: 0 },
   { label: "cv", index: 1 },
-  { label: "writing", index: 2 },
+  { label: "academics", index: 2 },
+  { label: "writing", index: 3 },
 ];
 
 interface HeaderProps {
