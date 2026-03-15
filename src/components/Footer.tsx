@@ -12,7 +12,7 @@ const Footer = ({ minimized, onRestore, fixed, disabled }: FooterProps) => {
     <footer className={`border-t border-border py-4 px-6 bg-background ${fixed ? 'fixed bottom-0 left-0 right-0 z-40' : ''} ${disabled ? 'opacity-30 pointer-events-none' : ''} transition-opacity`}>
       <div className="max-w-3xl mx-auto flex items-center justify-between text-xs text-muted-foreground h-5">
         <span>
-          <span className="text-ansi-green">$</span> echo © {new Date().getFullYear()}
+          <span className="text-hoodie-blue">$</span> marcel braasch © {new Date().getFullYear()}
         </span>
         <span className="flex items-center gap-2">
           {minimized && onRestore && (

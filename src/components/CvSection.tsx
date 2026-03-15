@@ -99,10 +99,10 @@ const experiences: Experience[] = [
     command: "cat cv/role-1.txt",
     bullets: [
       { icon: "stack", text: "Stack: Python (Semantic Kernel, Pydantic, FastAPI), OpenAI API, MS Azure, MCP, ElevenLabs" },
-      { icon: "star", text: "Part of project's SteerCo, recognized as go-to expert on agentic evals driving cross-functional alignment across the org" },
-      { icon: "impact", text: "Lead engineer in building KPN's agentic evaluation approach reducing agent time-to-prod from weeks to days" },
-      { icon: "build", text: "Owner, builder and maintainer of one agent in KPN's voice-based multi-agent system with go-live in Q1" },
-      { icon: "collab", text: "Building use-cases in sub-teams, evaluating them streamlined and closely together with use-case owners" },
+      { icon: "impact", text: "Lead engineer building agent eval capabilities reducing time-to-prod from months to weeks" },
+      { icon: "star", text: "Part of project's SteerCo, recognized as go-to expert on evals, driving practices through the org" },
+      { icon: "build", text: "Owner and and maintainer of one agent in KPN's voice-based multi-agent system live on prod" },
+      { icon: "collab", text: "Building use-cases in sub-teams, driving streamlined evaluation across cross use-case" },
     ],
   },
   {
@@ -158,17 +158,19 @@ const experiences: Experience[] = [
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const lastScrollTime = useRef(0);
+  const currentIndexRef = useRef(0);
+  const lockedUntilRef = useRef(0);
 
   const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndex) return;
+    if (clamped === currentIndexRef.current) return;
+    currentIndexRef.current = clamped;
     setCurrentIndex(clamped);
     const container = containerRef.current;
     if (!container) return;
-    lastScrollTime.current = Date.now();
     container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [currentIndex]);
+    lockedUntilRef.current = Date.now() + 1200;
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -176,18 +178,18 @@ const CvSection = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (Date.now() < lockedUntilRef.current) return;
       if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndex + (e.deltaY > 0 ? 1 : -1));
+      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
     };
 
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() - lastScrollTime.current < 700) return;
+      if (Date.now() < lockedUntilRef.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndex + (diff > 0 ? 1 : -1));
+      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -198,7 +200,7 @@ const CvSection = () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [currentIndex, scrollToIndex]);
+  }, [scrollToIndex]);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
@@ -208,7 +210,22 @@ const CvSection = () => {
             <div className="flex items-center gap-4 mb-6">
               <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
               <div>
-                <pre className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block`} aria-hidden="true">
+                <pre
+                  className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block cursor-pointer`}
+                  aria-hidden="true"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const range = document.createRange();
+                    range.selectNodeContents(e.currentTarget);
+                    const sel = window.getSelection();
+                    sel?.removeAllRanges();
+                    sel?.addRange(range);
+                  }}
+                  onCopy={(e) => {
+                    e.preventDefault();
+                    e.clipboardData.setData("text/plain", exp.company);
+                  }}
+                >
                   {exp.asciiLogo}
                 </pre>
                 <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>

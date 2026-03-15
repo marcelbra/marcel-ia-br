@@ -43,6 +43,7 @@
     --ansi-blue: 210 90% 50%;
     --ansi-cyan: 185 60% 50%;
     --ansi-magenta: 310 80% 60%;
+    --hoodie-blue: 192 65% 72%;
 
     --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
@@ -86,6 +87,8 @@
   .text-ansi-blue { color: hsl(var(--ansi-blue)); }
   .text-ansi-cyan { color: hsl(var(--ansi-cyan)); }
   .text-ansi-magenta { color: hsl(var(--ansi-magenta)); }
+  .text-hoodie-blue { color: hsl(var(--hoodie-blue)); }
+  .border-hoodie-blue { border-color: hsl(var(--hoodie-blue)); }
 
   .border-ansi-blue { border-color: hsl(var(--ansi-blue)); }
 
@@ -102,5 +105,14 @@
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
