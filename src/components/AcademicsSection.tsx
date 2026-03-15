@@ -7,6 +7,7 @@ import tumLogo from "@/assets/tum-logo.png";
 import ethLogo from "@/assets/eth-logo.png";
 
 interface Bullet {
+  prefix?: string;
   text: string;
   link?: string;
   suffix?: string;
@@ -36,14 +37,13 @@ const entries: Education[] = [
     period: "Mar 2024 — Aug 2024",
     color: "text-muted-foreground",
     borderColor: "border-muted-foreground/30",
-    logoScale: 5,
+    logoScale: 9,
     logoOffset: 0,
-    logoMarginLeft: '7rem',
+    logoMarginLeft: '9rem',
     command: "cat academics/masters-1.txt",
     bullets: [
+      { prefix: "Thesis: \"", text: "Problem decomposition in language modeling using chain-of-experts", link: "https://github.com/marcelbra/Papers/blob/main/problem_decomp_in_llms.pdf", suffix: "\"" },
       "Grade 1.0",
-      "Thesis: \"Problem decomposition in language modeling using chain-of-experts\"",
-      "Research at the ETH AI Center on advanced language model architectures",
     ],
   },
   {
@@ -59,8 +59,8 @@ const entries: Education[] = [
     command: "cat academics/masters-2.txt",
     bullets: [
       "Grade 1.7 — Top 5%",
-      "Focus: applied math and machine learning (40%), deep learning in NLP (40%), high-performance computing (20%)",
-      "Exchange semester @ Tecnico Lisboa",
+      { text: "Exchange semester @ Tecnico Lisboa - now fluent in ", suffix: "🇧🇷" },
+      "Focus: applied math and machine learning (40%), deep learning\nin NLP (40%), high\u2011performance computing (20%)",
     ],
   },
   {
@@ -77,8 +77,8 @@ const entries: Education[] = [
     command: "cat academics/masters-3.txt",
     bullets: [
       "Grade 1.4 — Top 5%",
+      { prefix: "Thesis: \"", text: "Improving rare word representations in pre-trained language models", link: "https://github.com/marcelbra/Papers/blob/main/learning_rare_words_in_PLMs.pdf", suffix: "\"" },
       "Focus: language modeling (70%) and theoretical linguistics (30%)",
-      "Thesis: \"Improving rare word representations in pre-trained language models\" (grade 1.3)",
     ],
   },
   {
@@ -93,7 +93,7 @@ const entries: Education[] = [
     logoMarginLeft: '7.5rem',
     command: "cat academics/bachelors.txt",
     bullets: [
-      { text: "Thesis: \"Context in Information Retrieval\"", link: "https://github.com/marcelbra/Papers/blob/main/01_context_in_information_retrieval.pdf", suffix: " (grade: 1.3 / 4)" },
+      { prefix: "Thesis: \"", text: "Context in Information Retrieval", link: "https://github.com/marcelbra/Papers/blob/main/01_context_in_information_retrieval.pdf", suffix: "\" (grade: 1.3 / 4)" },
       "Early Specialization in ML and DL for NLP, minor in linguistics",
       "Programming tutor across 3 semesters, supervising 6 classes",
     ],
@@ -151,7 +151,7 @@ const AcademicsSection = () => {
         <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
             <div className={`flex items-center ${entry.logoImage ? 'gap-10' : 'gap-4'} mb-6`}>
-              <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
+              <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
               <div>
                 {entry.asciiLogo ? (
                   <pre className={`${entry.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block`} aria-hidden="true">
@@ -177,6 +177,7 @@ const AcademicsSection = () => {
               </div>
               <ul className="space-y-2">
                 {entry.bullets.map((bullet, j) => {
+                  const prefix = typeof bullet === "string" ? undefined : bullet.prefix;
                   const text = typeof bullet === "string" ? bullet : bullet.text;
                   const link = typeof bullet === "string" ? undefined : bullet.link;
                   const suffix = typeof bullet === "string" ? undefined : bullet.suffix;
@@ -185,11 +186,10 @@ const AcademicsSection = () => {
                       <span className="text-ansi-yellow shrink-0">›</span>
                       {link ? (
                         <span>
-                          <a href={link} target="_blank" rel="noopener noreferrer" className="hover:text-foreground underline underline-offset-2 transition-colors">{text}</a>
-                          {suffix}
+                          {prefix}<a href={link} target="_blank" rel="noopener noreferrer" className="hover:text-foreground underline underline-offset-2 transition-colors">{text}</a>{suffix}
                         </span>
                       ) : (
-                        <span>{text}</span>
+                        <span className="whitespace-pre-line">{text}{suffix && <span className="text-lg leading-none">{suffix}</span>}</span>
                       )}
                     </li>
                   );
