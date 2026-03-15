@@ -3,13 +3,77 @@ import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
 
+type IconName = "stack" | "star" | "impact" | "build" | "agent" | "collab" | "scale";
+
+const PixelIcon = ({ name, className = "" }: { name: IconName; className?: string }) => {
+  const icons: Record<IconName, JSX.Element> = {
+    stack: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1L1 5l7 4 7-4-7-4z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M1 8l7 4 7-4" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M1 11l7 4 7-4" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+      </svg>
+    ),
+    star: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1l2.1 4.3 4.9.7-3.5 3.4.8 4.6L8 11.8 3.7 14l.8-4.6L1 6l4.9-.7L8 1z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+      </svg>
+    ),
+    impact: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <path d="M2 14L14 2" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M7 2h7v7" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+      </svg>
+    ),
+    build: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+      </svg>
+    ),
+    agent: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <circle cx="6" cy="5" r="0.8" fill="currentColor"/>
+        <circle cx="10" cy="5" r="0.8" fill="currentColor"/>
+        <path d="M6 7.5c0 1.1.9 2 2 2s2-.9 2-2" stroke="currentColor" strokeWidth="0.8" fill="none"/>
+        <line x1="8" y1="1.5" x2="8" y2="0" stroke="currentColor" strokeWidth="1.2"/>
+        <circle cx="8" cy="0" r="0.6" fill="currentColor"/>
+      </svg>
+    ),
+    collab: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <circle cx="5" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <circle cx="11" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M0 14c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+        <path d="M6 14c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+      </svg>
+    ),
+    scale: (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <line x1="1" y1="14" x2="1" y2="1" stroke="currentColor" strokeWidth="1.2"/>
+        <line x1="1" y1="14" x2="15" y2="14" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M3 11V8h2v3H3zM7 11V5h2v6H7zM11 11V3h2v8h-2z" fill="currentColor" opacity="0.5"/>
+      </svg>
+    ),
+  };
+  return <span className={`shrink-0 opacity-60 ${className}`}>{icons[name]}</span>;
+};
+
+interface BulletItem {
+  icon: IconName;
+  text: string;
+}
+
 interface Experience {
   asciiLogo: string;
   logo: string;
   title: string;
   company: string;
   period: string;
-  bullets: string[];
+  bullets: BulletItem[];
   color: string;
   borderColor: string;
   logoScale?: number;
@@ -28,16 +92,17 @@ const experiences: Experience[] = [
 ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝`.trim(),
     logo: kpnLogo,
     title: "Machine Learning Engineer",
-    company: "KPN",
+    company: "Royal KPN N.V.",
     period: "Sep 2025 — Present",
     color: "text-ansi-green",
     borderColor: "border-ansi-green/30",
     command: "cat cv/role-1.txt",
     bullets: [
-      "Building and deploying ML models for network optimization",
-      "Developing real-time anomaly detection pipelines at scale",
-      "Collaborating with cross-functional teams on AI-driven products",
-      "Improving model inference latency by 3x through optimization",
+      { icon: "stack", text: "Stack: Python (Semantic Kernel, Pydantic, FastAPI), OpenAI API, MS Azure, MCP, ElevenLabs" },
+      { icon: "star", text: "Part of project's SteerCo, recognized as go-to expert on agentic evals driving cross-functional alignment across the org" },
+      { icon: "impact", text: "Lead engineer in building KPN's agentic evaluation approach reducing agent time-to-prod from weeks to days" },
+      { icon: "build", text: "Owner, builder and maintainer of one agent in KPN's voice-based multi-agent system with go-live in Q1" },
+      { icon: "collab", text: "Building use-cases in sub-teams, evaluating them streamlined and closely together with use-case owners" },
     ],
   },
   {
@@ -50,16 +115,17 @@ const experiences: Experience[] = [
 ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim(),
     logo: newtoneLogo,
     title: "Founding AI Engineer",
-    company: "Newtone",
-    period: "Jan 2024 — Aug 2025",
+    company: "Newtone SAS",
+    period: "Feb 2025 — Sep 2025",
     color: "text-ansi-magenta",
     borderColor: "border-ansi-magenta/30",
     command: "cat cv/role-2.txt",
     bullets: [
-      "Co-founded and built AI-powered products from zero to launch",
-      "Designed end-to-end ML pipelines for natural language understanding",
-      "Led technical architecture decisions for scalable AI systems",
-      "Shipped production models serving thousands of daily users",
+      { icon: "stack", text: "Stack: Python (LangGraph, LangChain, LangSmith, FastAPI), Claude/OpenAI/Gemini, PostgreSQL, GCP" },
+      { icon: "build", text: "Built the core agent capabilities (generate, edit, translate content; manage and update context)" },
+      { icon: "impact", text: "Drove MRR from 50K to 100K in a frame of 4 months within a team of 5" },
+      { icon: "agent", text: "Built a multimodal agentic solution to turn images, specs, brand guidelines into product content" },
+      { icon: "collab", text: "Engaged with customers daily to gather feedback iterating on the solution in real-time" },
     ],
   },
   {
@@ -72,18 +138,19 @@ const experiences: Experience[] = [
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚══════╝`.trim(),
     logo: eraneosLogo,
     title: "AI Engineer",
-    company: "Eraneos",
-    period: "Jun 2022 — Dec 2023",
+    company: "Eraneos Analytics Germany",
+    period: "Jan 2023 — Feb 2025",
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
     command: "cat cv/role-3.txt",
     logoScale: 1.5,
     logoOffset: 4,
     bullets: [
-      "Developed and deployed machine learning solutions for enterprise clients",
-      "Built NLP pipelines for document classification and extraction",
-      "Created dashboards and tooling to monitor model performance",
-      "Mentored junior engineers on ML best practices and workflows",
+      { icon: "stack", text: "Stack: Python (LangChain, FastAPI), OpenAI API, Docker, PostgreSQL, RabbitMQ, GCP, Azure" },
+      { icon: "star", text: "Built LLM-based customer feedback software at Deutsche Telekom AG for 1.5 years" },
+      { icon: "scale", text: "Scaled app to real-time access: 10M+ feedbacks, 30M+ related entities, 10K new daily data points" },
+      { icon: "impact", text: "Member of core engineering team at Convalid, worked in team of 8, acquired by Eraneos" },
+      { icon: "collab", text: "Daily customer touchpoints; deriving business requirements and shipping features" },
     ],
   },
 ];
@@ -163,9 +230,9 @@ const CvSection = () => {
               </div>
               <ul className="space-y-2">
                 {exp.bullets.map((bullet, j) => (
-                  <li key={j} className="text-sm text-muted-foreground flex gap-2">
-                    <span className="text-ansi-yellow shrink-0">›</span>
-                    <span>{bullet}</span>
+                  <li key={j} className="text-[12px] text-muted-foreground flex items-start gap-2">
+                    <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
+                    <span>{bullet.text}</span>
                   </li>
                 ))}
               </ul>

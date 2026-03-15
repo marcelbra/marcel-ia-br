@@ -26,6 +26,9 @@ interface Education {
   logoOffset?: number;
   logoMarginLeft?: string;
   command?: string;
+  periodInfo?: string;
+  extraPeriod?: string;
+  extraPeriodInfo?: string;
 }
 
 const entries: Education[] = [
@@ -42,7 +45,7 @@ const entries: Education[] = [
     logoMarginLeft: '9rem',
     command: "cat academics/masters-1.txt",
     bullets: [
-      { prefix: "Thesis: \"", text: "Problem decomposition in language modeling using chain-of-experts", link: "https://github.com/marcelbra/Papers/blob/main/problem_decomp_in_llms.pdf", suffix: "\"" },
+      { prefix: "Thesis: \"", text: "Problem Decomposition in Language Modeling Using Chain-of-Experts", link: "https://github.com/marcelbra/Papers/blob/main/problem_decomp_in_llms.pdf", suffix: "\"" },
       "Grade 1.0",
     ],
   },
@@ -51,7 +54,10 @@ const entries: Education[] = [
     logo: tumLogo,
     title: "M.Sc. Data Engineering and Analytics",
     institution: "TU Munich",
-    period: "Nov 2020 — Aug 2024",
+    period: "Nov 2020 — Dec 2022",
+    periodInfo: "Coursework concluded in parallel with completely finished LMU master's.",
+    extraPeriod: "Mar 2024 — Aug 2024",
+    extraPeriodInfo: "Return to academia to finish the outstanding thesis.",
     color: "text-[#0065bd]",
     borderColor: "border-[#0065bd]/30",
     logoScale: 7,
@@ -93,9 +99,9 @@ const entries: Education[] = [
     logoMarginLeft: '7.5rem',
     command: "cat academics/bachelors.txt",
     bullets: [
-      { prefix: "Thesis: \"", text: "Context in Information Retrieval", link: "https://github.com/marcelbra/Papers/blob/main/01_context_in_information_retrieval.pdf", suffix: "\" (grade: 1.3 / 4)" },
-      "Early Specialization in ML and DL for NLP, minor in linguistics",
+      { prefix: "Thesis: \"", text: "Context in Information Retrieval", link: "https://github.com/marcelbra/Papers/blob/main/01_context_in_information_retrieval.pdf", suffix: "\" (grade: 1.3)" },
       "Programming tutor across 3 semesters, supervising 6 classes",
+      "Early Specialization in ML and DL for NLP, minor in linguistics",
     ],
   },
 ];
@@ -171,9 +177,32 @@ const AcademicsSection = () => {
                 <h3 className="text-foreground font-medium text-lg">
                   {entry.title} <span className={entry.color}>@ {entry.institution}</span>
                 </h3>
-                <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
-                  {entry.period}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background relative ${entry.periodInfo ? 'group/main cursor-help' : ''}`}>
+                    {entry.period}
+                    {entry.periodInfo && (
+                      <>
+                        <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-ansi-blue/20 text-[9px] text-ansi-blue/70 animate-pulse">i</span>
+                        <span className="absolute right-0 top-full mt-1 w-48 p-2 text-xs bg-background border border-border rounded shadow-lg opacity-0 group-hover/main:opacity-100 transition-opacity pointer-events-none z-10">
+                          {entry.periodInfo}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  {entry.extraPeriod && (
+                    <span className={`text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background relative ${entry.extraPeriodInfo ? 'group/extra cursor-help' : ''}`}>
+                      {entry.extraPeriod}
+                      {entry.extraPeriodInfo && (
+                        <>
+                          <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-ansi-blue/20 text-[9px] text-ansi-blue/70 animate-pulse">i</span>
+                          <span className="absolute right-0 top-full mt-1 w-48 p-2 text-xs bg-background border border-border rounded shadow-lg opacity-0 group-hover/extra:opacity-100 transition-opacity pointer-events-none z-10">
+                            {entry.extraPeriodInfo}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
               <ul className="space-y-2">
                 {entry.bullets.map((bullet, j) => {
@@ -182,7 +211,7 @@ const AcademicsSection = () => {
                   const link = typeof bullet === "string" ? undefined : bullet.link;
                   const suffix = typeof bullet === "string" ? undefined : bullet.suffix;
                   return (
-                    <li key={j} className="text-sm text-muted-foreground flex gap-2">
+                    <li key={j} className="text-[12px] text-muted-foreground flex gap-2">
                       <span className="text-ansi-yellow shrink-0">›</span>
                       {link ? (
                         <span>
