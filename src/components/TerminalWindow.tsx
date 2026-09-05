@@ -34,7 +34,9 @@ const loadOffset = () => {
   try {
     const saved = sessionStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved) as { x: number; y: number };
-  } catch {}
+  } catch {
+    // sessionStorage unavailable or holds malformed JSON; fall back to origin
+  }
   return { x: 0, y: 0 };
 };
 
