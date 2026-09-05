@@ -71,7 +71,8 @@ interface BulletItem {
 
 interface Experience {
   asciiLogo: string;
-  /** Column width of each letter of asciiLogo, left to right. */
+  /** The letters asciiLogo spells, and the column width of each, left to right. */
+  asciiWord: string;
   letterWidths: number[];
   logo: string;
   title: string;
@@ -94,6 +95,7 @@ const experiences: Experience[] = [
 ██╔═██╗ ██╔═══╝ ██║╚██╗██║
 ██║  ██╗██║     ██║ ╚████║
 ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝`.trim(),
+    asciiWord: "KPN",
     letterWidths: [8, 8, 10],
     logo: kpnLogo,
     title: "Machine Learning Engineer",
@@ -118,6 +120,7 @@ const experiences: Experience[] = [
 ██║╚██╗██║██╔══╝  ██║███╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝  
 ██║ ╚████║███████╗╚███╔███╔╝   ██║   ╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim(),
+    asciiWord: "NEWTONE",
     letterWidths: [10, 8, 10, 9, 9, 10, 8],
     logo: newtoneLogo,
     title: "Founding AI Engineer",
@@ -142,6 +145,7 @@ const experiences: Experience[] = [
 ██╔══╝  ██╔══██╗██╔══██║██║╚██╗██║██╔══╝  ██║   ██║╚════██║
 ███████╗██║  ██║██║  ██║██║ ╚████║███████╗╚██████╔╝███████║
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚══════╝`.trim(),
+    asciiWord: "ERANEOS",
     letterWidths: [8, 8, 8, 10, 8, 9, 8],
     logo: eraneosLogo,
     title: "AI Engineer",
@@ -203,28 +207,84 @@ const ClippedLine = ({ segments }: { segments: Segment[] }) => {
  * of the window, which for a short mark like KPN never happens. It loses whole
  * letters, never half a glyph, and the font's own ellipsis — three big dots on
  * the baseline — follows the last letter left standing.
+ *
+ * The art is six rows of box drawing characters, so marking it natively drags
+ * through those rows rather than through the letters they draw. Every letter is
+ * therefore its own element and the drag is driven by hand: the selection covers
+ * whole letters between the one the drag started on and the one under the
+ * pointer, and copying it yields the word instead of the art.
  */
 const AsciiLogo = ({ exp }: { exp: Experience }) => {
   const [ref, capacity] = useCharCapacity<HTMLPreElement>();
+  const letters = clipAscii(exp.asciiLogo, exp.letterWidths, capacity);
+
+  const letterAt = (clientX: number) => {
+    const rendered = Array.from(ref.current?.children ?? []);
+    const index = rendered.findIndex((letter) => clientX < letter.getBoundingClientRect().right);
+    return index === -1 ? rendered.length - 1 : index;
+  };
+
+  const selectLetters = (from: number, to: number) => {
+    const rendered = ref.current?.children;
+    if (!rendered?.length) return;
+    const range = document.createRange();
+    range.setStartBefore(rendered[Math.min(from, to)]);
+    range.setEndAfter(rendered[Math.max(from, to)]);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLPreElement>) => {
+    if (e.button !== 0 || e.pointerType !== "mouse") return;
+    e.preventDefault();
+    // Nothing is marked until the pointer actually moves — same as plain text.
+    window.getSelection()?.removeAllRanges();
+
+    const anchor = letterAt(e.clientX);
+    const wordmark = e.currentTarget;
+    // Captured, so a release outside the window still ends the drag.
+    wordmark.setPointerCapture(e.pointerId);
+
+    const handleMove = (move: PointerEvent) => selectLetters(anchor, letterAt(move.clientX));
+    const handleUp = () => {
+      wordmark.removeEventListener("pointermove", handleMove);
+      wordmark.removeEventListener("pointerup", handleUp);
+      wordmark.removeEventListener("pointercancel", handleUp);
+    };
+    wordmark.addEventListener("pointermove", handleMove);
+    wordmark.addEventListener("pointerup", handleUp);
+    wordmark.addEventListener("pointercancel", handleUp);
+  };
+
+  const handleCopy = (e: React.ClipboardEvent) => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+    // intersectsNode, not containsNode: the range ends flush against the next
+    // letter's boundary, which counts as containment but not as an intersection.
+    const range = selection.getRangeAt(0);
+    const marked = Array.from(ref.current?.children ?? [])
+      .filter((letter) => range.intersectsNode(letter))
+      .map((letter) => (letter as HTMLElement).dataset.letter)
+      .join("");
+    if (!marked) return;
+    e.preventDefault();
+    e.clipboardData.setData("text/plain", marked);
+  };
+
   return (
     <pre
       ref={ref}
-      className={`${exp.color} min-w-0 flex-1 overflow-hidden text-[8px] leading-[1.15] tracking-[0.02em] font-bold cursor-pointer`}
+      className={`${exp.color} min-w-0 flex-1 flex overflow-hidden text-[8px] leading-[1.15] tracking-[0.02em] font-bold`}
       aria-hidden="true"
-      onMouseDown={(e) => {
-        e.preventDefault();
-        const range = document.createRange();
-        range.selectNodeContents(e.currentTarget);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }}
-      onCopy={(e) => {
-        e.preventDefault();
-        e.clipboardData.setData("text/plain", exp.company);
-      }}
+      onPointerDown={handlePointerDown}
+      onCopy={handleCopy}
     >
-      {clipAscii(exp.asciiLogo, exp.letterWidths, capacity)}
+      {letters.map((block, i) => (
+        <span key={i} data-letter={exp.asciiWord[i] ?? ""} className="shrink-0">
+          {block}
+        </span>
+      ))}
     </pre>
   );
 };

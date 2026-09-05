@@ -28,14 +28,19 @@ describe("clipAscii", () => {
   const LETTERS = [10, 8, 10, 8];
   const art = Array.from({ length: 6 }, () => "AAAAAAAAAABBBBBBBBCCCCCCCCCCDDDDDDDD").join("\n");
   const dotted = (kept: string, row: 0 | 1) => `${kept} ${ASCII_DOTS[row]}`;
+  /** The letter blocks stitched back into rows of art, the way they render. */
+  const joined = (blocks: string[]) => {
+    const rows = blocks.map((block) => block.split("\n"));
+    return rows[0].map((_, i) => rows.map((row) => row[i]).join("").trimEnd());
+  };
 
   it("leaves art that fits alone", () => {
-    expect(clipAscii(art, LETTERS, 36)).toBe(art);
-    expect(clipAscii(art, LETTERS, 80)).toBe(art);
+    expect(joined(clipAscii(art, LETTERS, 36)).join("\n")).toBe(art);
+    expect(joined(clipAscii(art, LETTERS, 80)).join("\n")).toBe(art);
   });
 
   it("drops whole letters, never part of one", () => {
-    const lines = clipAscii(art, LETTERS, 30).split("\n");
+    const lines = joined(clipAscii(art, LETTERS, 30));
     // A and B fit alongside the 12-column ellipsis, C does not.
     expect(lines[0]).toBe("AAAAAAAAAABBBBBBBB");
     expect(lines[4]).toBe(dotted("AAAAAAAAAABBBBBBBB", 0));
@@ -43,23 +48,23 @@ describe("clipAscii", () => {
   });
 
   it("takes the next letter away one column too early, not one column late", () => {
-    expect(clipAscii(art, LETTERS, 29).split("\n")[0]).toBe("AAAAAAAAAA");
-    expect(clipAscii(art, LETTERS, 30).split("\n")[0]).toBe("AAAAAAAAAABBBBBBBB");
+    expect(joined(clipAscii(art, LETTERS, 29))[0]).toBe("AAAAAAAAAA");
+    expect(joined(clipAscii(art, LETTERS, 30))[0]).toBe("AAAAAAAAAABBBBBBBB");
   });
 
   it("puts the dots against the last letter left standing", () => {
-    const lines = clipAscii(art, LETTERS, 29).split("\n");
+    const lines = joined(clipAscii(art, LETTERS, 29));
     expect(lines[4]).toBe(dotted("AAAAAAAAAA", 0));
     expect(lines[5]).toBe(dotted("AAAAAAAAAA", 1));
   });
 
   it("never spills past the capacity", () => {
     for (const capacity of [35, 30, 22, 21, 12, 5, 1]) {
-      expect(clipAscii(art, LETTERS, capacity).split("\n").every((l) => l.length <= capacity)).toBe(true);
+      expect(joined(clipAscii(art, LETTERS, capacity)).every((l) => l.length <= capacity)).toBe(true);
     }
   });
 
   it("leaves the art alone while the width is unknown", () => {
-    expect(clipAscii(art, LETTERS, 0)).toBe(art);
+    expect(joined(clipAscii(art, LETTERS, 0)).join("\n")).toBe(art);
   });
 });
