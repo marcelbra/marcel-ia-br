@@ -209,7 +209,10 @@ const Hero = () => {
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
           <div className="relative">
-            <img src={AVATAR_FRAMES[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-2.5rem] cursor-default" onMouseEnter={handleWelcomeEnter} />
+            {/* Every frame carries ~15% transparent padding below the feet, so items-end
+                alone leaves the character floating. Pull it down to sit the feet on the
+                WELCOME baseline (the padding, less the pre's trailing line leading). */}
+            <img src={AVATAR_FRAMES[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-1.22rem] cursor-default" onMouseEnter={handleWelcomeEnter} />
             {showBubble && (
               <div className="absolute -top-3 -right-20 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-bl-none border-2 border-hoodie-blue shadow-[0_2px_12px_rgba(255,255,255,0.15)] whitespace-nowrap animate-fade-in">
                 Hey there!
