@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
 import { ASCII_DOTS } from "@/lib/clip";
 
@@ -46,6 +46,24 @@ describe("CvSection at a narrow width", () => {
     expect(kpn.textContent).not.toContain(ASCII_DOTS[1]); // 26 columns wide — it fits
     expect(newtone.textContent).toContain(ASCII_DOTS[1]); // 64 columns wide — it does not
     expect(newtone.textContent?.split("\n").every((l) => l.length <= 40)).toBe(true);
+  });
+
+  it("drops whole letters and puts the dots where the last one went", () => {
+    stubLayout(1000, 5);
+    const { container: roomy } = render(<CvSection />);
+    const full = [...roomy.querySelectorAll("pre")][1].textContent!.split("\n");
+    cleanup();
+
+    stubLayout(200, 5); // 40 characters fit
+    const { container } = render(<CvSection />);
+    const cut = [...container.querySelectorAll("pre")][1].textContent!.split("\n");
+
+    // NEWTONE's letters are 10, 8, 10 and 9 columns wide: N, E and W fit next
+    // to the 12-column ellipsis, T does not.
+    const kept = 28;
+    expect(cut[0]).toBe(full[0].slice(0, kept).trimEnd());
+    expect(cut[5]).toBe(`${full[5].slice(0, kept)} ${ASCII_DOTS[1]}`);
+    expect(cut.every((line) => line.length <= 40)).toBe(true);
   });
 });
 

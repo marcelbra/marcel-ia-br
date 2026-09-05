@@ -71,6 +71,8 @@ interface BulletItem {
 
 interface Experience {
   asciiLogo: string;
+  /** Column width of each letter of asciiLogo, left to right. */
+  letterWidths: number[];
   logo: string;
   title: string;
   company: string;
@@ -92,6 +94,7 @@ const experiences: Experience[] = [
 ██╔═██╗ ██╔═══╝ ██║╚██╗██║
 ██║  ██╗██║     ██║ ╚████║
 ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝`.trim(),
+    letterWidths: [8, 8, 10],
     logo: kpnLogo,
     title: "Machine Learning Engineer",
     company: "Royal KPN N.V.",
@@ -115,6 +118,7 @@ const experiences: Experience[] = [
 ██║╚██╗██║██╔══╝  ██║███╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝  
 ██║ ╚████║███████╗╚███╔███╔╝   ██║   ╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim(),
+    letterWidths: [10, 8, 10, 9, 9, 10, 8],
     logo: newtoneLogo,
     title: "Founding AI Engineer",
     company: "Newtone SAS",
@@ -138,6 +142,7 @@ const experiences: Experience[] = [
 ██╔══╝  ██╔══██╗██╔══██║██║╚██╗██║██╔══╝  ██║   ██║╚════██║
 ███████╗██║  ██║██║  ██║██║ ╚████║███████╗╚██████╔╝███████║
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚══════╝`.trim(),
+    letterWidths: [8, 8, 8, 10, 8, 9, 8],
     logo: eraneosLogo,
     title: "AI Engineer",
     company: "Eraneos Analytics Germany",
@@ -195,8 +200,9 @@ const ClippedLine = ({ segments }: { segments: Segment[] }) => {
 /**
  * The ASCII wordmark stays on screen at every width — no swapping it out for
  * plain text. It is only cut down, column by column, once it runs into the edge
- * of the window, which for a short mark like KPN never happens. A cut is marked
- * by the font's own ellipsis, three big dots on the baseline.
+ * of the window, which for a short mark like KPN never happens. It loses whole
+ * letters, never half a glyph, and the font's own ellipsis — three big dots on
+ * the baseline — follows the last letter left standing.
  */
 const AsciiLogo = ({ exp }: { exp: Experience }) => {
   const [ref, capacity] = useCharCapacity<HTMLPreElement>();
@@ -218,7 +224,7 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
         e.clipboardData.setData("text/plain", exp.company);
       }}
     >
-      {clipAscii(exp.asciiLogo, capacity)}
+      {clipAscii(exp.asciiLogo, exp.letterWidths, capacity)}
     </pre>
   );
 };

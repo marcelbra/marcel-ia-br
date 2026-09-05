@@ -24,28 +24,42 @@ describe("clip", () => {
 });
 
 describe("clipAscii", () => {
-  const art = Array.from({ length: 6 }, () => "X".repeat(40)).join("\n");
+  // Four letters, 10 + 8 + 10 + 8 columns wide.
+  const LETTERS = [10, 8, 10, 8];
+  const art = Array.from({ length: 6 }, () => "AAAAAAAAAABBBBBBBBCCCCCCCCCCDDDDDDDD").join("\n");
+  const dotted = (kept: string, row: 0 | 1) => `${kept} ${ASCII_DOTS[row]}`;
 
   it("leaves art that fits alone", () => {
-    expect(clipAscii(art, 40)).toBe(art);
-    expect(clipAscii(art, 80)).toBe(art);
+    expect(clipAscii(art, LETTERS, 36)).toBe(art);
+    expect(clipAscii(art, LETTERS, 80)).toBe(art);
   });
 
-  it("marks the cut once, with the big dots on the baseline", () => {
-    const lines = clipAscii(art, 30).split("\n");
-    expect(lines[4].endsWith(ASCII_DOTS[0])).toBe(true);
-    expect(lines[5].endsWith(ASCII_DOTS[1])).toBe(true);
-    // The rows above carry no dots of their own.
-    expect(lines.slice(0, 4).every((line) => line === "X".repeat(18))).toBe(true);
+  it("drops whole letters, never part of one", () => {
+    const lines = clipAscii(art, LETTERS, 30).split("\n");
+    // A and B fit alongside the 12-column ellipsis, C does not.
+    expect(lines[0]).toBe("AAAAAAAAAABBBBBBBB");
+    expect(lines[4]).toBe(dotted("AAAAAAAAAABBBBBBBB", 0));
+    expect(lines[5]).toBe(dotted("AAAAAAAAAABBBBBBBB", 1));
+  });
+
+  it("takes the next letter away one column too early, not one column late", () => {
+    expect(clipAscii(art, LETTERS, 29).split("\n")[0]).toBe("AAAAAAAAAA");
+    expect(clipAscii(art, LETTERS, 30).split("\n")[0]).toBe("AAAAAAAAAABBBBBBBB");
+  });
+
+  it("puts the dots against the last letter left standing", () => {
+    const lines = clipAscii(art, LETTERS, 29).split("\n");
+    expect(lines[4]).toBe(dotted("AAAAAAAAAA", 0));
+    expect(lines[5]).toBe(dotted("AAAAAAAAAA", 1));
   });
 
   it("never spills past the capacity", () => {
-    for (const capacity of [30, 20, 13, 12, 8, 1]) {
-      expect(clipAscii(art, capacity).split("\n").every((l) => l.length <= capacity)).toBe(true);
+    for (const capacity of [35, 30, 22, 21, 12, 5, 1]) {
+      expect(clipAscii(art, LETTERS, capacity).split("\n").every((l) => l.length <= capacity)).toBe(true);
     }
   });
 
   it("leaves the art alone while the width is unknown", () => {
-    expect(clipAscii(art, 0)).toBe(art);
+    expect(clipAscii(art, LETTERS, 0)).toBe(art);
   });
 });
