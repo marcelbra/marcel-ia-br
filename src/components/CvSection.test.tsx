@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
 import { ASCII_DOTS } from "@/lib/clip";
 
@@ -18,6 +18,14 @@ afterEach(() => {
   Element.prototype.getBoundingClientRect = realRect;
   delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
 });
+
+const lettersOf = (mark: Element) => [...mark.querySelectorAll<HTMLElement>("[data-letter]")];
+
+/** The art rows, stitched back together out of the per-letter blocks. */
+const rowsOf = (mark: Element) => {
+  const blocks = lettersOf(mark).map((letter) => letter.textContent!.split("\n"));
+  return blocks[0].map((_, row) => blocks.map((block) => block[row] ?? "").join(""));
+};
 
 describe("CvSection at a narrow width", () => {
   it("cuts bullet text with ascii dots instead of wrapping it onto a second line", () => {
@@ -47,28 +55,38 @@ describe("CvSection at a narrow width", () => {
     expect(newtone.textContent).toContain(ASCII_DOTS[1]); // 64 columns wide — it does not
     expect(rowsOf(newtone).every((row) => row.length <= 40)).toBe(true);
   });
+
+  it("drops whole letters and puts the dots where the last one went", () => {
+    stubLayout(1000, 5);
+    const { container: roomy } = render(<CvSection />);
+    const full = rowsOf([...roomy.querySelectorAll("pre")][1]);
+    cleanup();
+
+    stubLayout(200, 5); // 40 characters fit
+    const { container } = render(<CvSection />);
+    const cut = rowsOf([...container.querySelectorAll("pre")][1]);
+
+    // NEWTONE's letters are 10, 8, 10 and 9 columns wide: N, E and W fit next
+    // to the 12-column ellipsis, T does not.
+    const kept = 28;
+    expect(cut[0]).toBe(full[0].slice(0, kept));
+    expect(cut[5]).toBe(`${full[5].slice(0, kept)} ${ASCII_DOTS[1]}`);
+    expect(cut.every((line) => line.length <= 40)).toBe(true);
+  });
 });
 
-const glyphsOf = (mark: Element) => [...mark.querySelectorAll<HTMLElement>("[data-glyph]")];
-
-/** The art rows, stitched back together out of the per-letter blocks. */
-const rowsOf = (mark: Element) => {
-  const blocks = glyphsOf(mark).map((glyph) => glyph.textContent!.split("\n"));
-  return blocks[0].map((_, row) => blocks.map((block) => block[row] ?? "").join(""));
-};
-
 describe("CvSection ascii wordmarks", () => {
-  it("splits each mark into one element per letter", () => {
+  it("splits every mark into one element per letter", () => {
     stubLayout(1000, 5);
     const { container } = render(<CvSection />);
 
     const words = [...container.querySelectorAll("pre")].map((mark) =>
-      glyphsOf(mark).map((glyph) => glyph.dataset.glyph).join(""),
+      lettersOf(mark).map((letter) => letter.dataset.letter).join(""),
     );
     expect(words).toEqual(["KPN", "NEWTONE", "ERANEOS"]);
   });
 
-  it("cuts the art on the real glyph boundaries", () => {
+  it("cuts the art on the real letter boundaries", () => {
     stubLayout(1000, 5);
     const { container } = render(<CvSection />);
     const seen = new Map<string, string>();
@@ -78,14 +96,13 @@ describe("CvSection ascii wordmarks", () => {
       // Every letter is a full-height block of equally long rows...
       expect(new Set(rows.map((row) => row.length)).size).toBe(1);
 
-      for (const glyph of glyphsOf(mark)) {
-        const letter = glyph.dataset.glyph!;
-        const block = glyph.textContent!;
+      for (const letter of lettersOf(mark)) {
+        const block = letter.textContent!;
         expect(block.split("\n")).toHaveLength(rows.length);
         // ...and renders identically wherever that letter appears.
-        const previous = seen.get(letter);
+        const previous = seen.get(letter.dataset.letter!);
         if (previous !== undefined) expect(block).toBe(previous);
-        seen.set(letter, block);
+        seen.set(letter.dataset.letter!, block);
       }
     }
 
@@ -94,18 +111,13 @@ describe("CvSection ascii wordmarks", () => {
     );
   });
 
-  it("drops whole letters as the window narrows, the ellipsis closing up behind them", () => {
+  it("keeps a letter and its element in step once the mark is cut", () => {
     stubLayout(200, 5); // 40 characters fit
     const { container } = render(<CvSection />);
     const newtone = [...container.querySelectorAll("pre")][1];
 
     // N E W fill the 28 columns left beside the ellipsis; T O N E do not.
-    expect(glyphsOf(newtone).map((glyph) => glyph.dataset.glyph).join("")).toBe("NEW");
-    // No letter is half drawn: N and E keep their own widths, W carries the mark.
-    const blocks = glyphsOf(newtone).map((glyph) => glyph.textContent!.split("\n"));
-    expect(blocks.map((block) => block[0].length)).toEqual([10, 8, 10]);
-    expect(blocks[2].at(-1)).toBe(" ╚══╝╚══╝  " + ASCII_DOTS[1]); // W's own baseline, then the dots
-    expect(rowsOf(newtone).every((row) => row.length <= 40)).toBe(true);
+    expect(lettersOf(newtone).map((letter) => letter.dataset.letter).join("")).toBe("NEW");
   });
 
   it("leaves the pointer alone — the mark is not a link", () => {

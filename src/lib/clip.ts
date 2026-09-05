@@ -21,21 +21,54 @@ export function clip(text: string, capacity: number): string {
 }
 
 /**
- * Cut a block of ASCII art to `capacity` columns. The cut is marked once, by
- * the block-style ellipsis on the baseline — not by a row of dots on every
- * line, which would read as six separate cuts instead of one wordmark that
- * carries on past the edge.
+ * Cut a wordmark down to `capacity` columns. Letters go whole or not at all —
+ * NEWTONE loses its E, then its W, never half a glyph — and the block-style
+ * ellipsis follows straight after the last letter left standing, so the dots
+ * sit where the letter that just went used to be.
+ *
+ * `letterWidths` is the column width of each letter of `art`, left to right.
+ * Returns the art one block per letter, the last block carrying the ellipsis,
+ * so a caller can keep the letters apart as separate elements.
  */
-export function clipAscii(art: string, capacity: number): string {
+export function clipAscii(art: string, letterWidths: number[], capacity: number): string[] {
   const lines = art.split("\n");
-  if (capacity <= 0 || lines.every((line) => line.length <= capacity)) return art;
+  const width = Math.max(...lines.map((line) => line.length));
+  const padded = lines.map((line) => line.padEnd(width));
+  const cut = capacity > 0 && width > capacity;
 
-  const keep = Math.max(0, capacity - ASCII_DOTS_WIDTH - ASCII_DOTS_GAP);
+  let letters = letterWidths.length;
+  if (cut) {
+    let used = 0;
+    letters = 0;
+    for (const letter of letterWidths) {
+      if (used + letter + ASCII_DOTS_GAP + ASCII_DOTS_WIDTH > capacity) break;
+      used += letter;
+      letters += 1;
+    }
+  }
+
+  const blocks: string[] = [];
+  let column = 0;
+  for (const letter of letterWidths.slice(0, letters)) {
+    blocks.push(padded.map((line) => line.slice(column, column + letter)).join("\n"));
+    column += letter;
+  }
+  if (!cut) return blocks;
+
   const firstDotRow = lines.length - ASCII_DOTS.length;
-  return lines
-    .map((line, i) => {
-      const dots = ASCII_DOTS[i - firstDotRow] ?? "";
-      return (line.slice(0, keep).padEnd(keep + ASCII_DOTS_GAP) + dots).slice(0, capacity).trimEnd();
-    })
-    .join("\n");
+  const withDots = (block: string, gap: number) =>
+    block
+      .split("\n")
+      .map((line, i) => {
+        const dots = ASCII_DOTS[i - firstDotRow];
+        return dots ? line + " ".repeat(gap) + dots : line;
+      })
+      .join("\n");
+
+  // Not even the first letter fits: the mark is nothing but its own ellipsis.
+  if (blocks.length === 0) {
+    const bare = withDots(lines.map(() => "").join("\n"), 0);
+    return [bare.split("\n").map((line) => line.slice(0, capacity)).join("\n")];
+  }
+  return [...blocks.slice(0, -1), withDots(blocks[blocks.length - 1], ASCII_DOTS_GAP)];
 }

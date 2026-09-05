@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useCharCapacity } from "@/hooks/use-char-capacity";
-import { ASCII_DOTS, clip } from "@/lib/clip";
+import { clip, clipAscii } from "@/lib/clip";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -71,7 +71,9 @@ interface BulletItem {
 
 interface Experience {
   asciiLogo: string;
+  /** The letters asciiLogo spells, and the column width of each, left to right. */
   asciiWord: string;
+  letterWidths: number[];
   logo: string;
   title: string;
   company: string;
@@ -94,6 +96,7 @@ const experiences: Experience[] = [
 ██║  ██╗██║     ██║ ╚████║
 ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝`.trim(),
     asciiWord: "KPN",
+    letterWidths: [8, 8, 10],
     logo: kpnLogo,
     title: "Machine Learning Engineer",
     company: "Royal KPN N.V.",
@@ -118,6 +121,7 @@ const experiences: Experience[] = [
 ██║ ╚████║███████╗╚███╔███╔╝   ██║   ╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim(),
     asciiWord: "NEWTONE",
+    letterWidths: [10, 8, 10, 9, 9, 10, 8],
     logo: newtoneLogo,
     title: "Founding AI Engineer",
     company: "Newtone SAS",
@@ -142,6 +146,7 @@ const experiences: Experience[] = [
 ███████╗██║  ██║██║  ██║██║ ╚████║███████╗╚██████╔╝███████║
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚══════╝`.trim(),
     asciiWord: "ERANEOS",
+    letterWidths: [8, 8, 8, 10, 8, 9, 8],
     logo: eraneosLogo,
     title: "AI Engineer",
     company: "Eraneos Analytics Germany",
@@ -196,72 +201,12 @@ const ClippedLine = ({ segments }: { segments: Segment[] }) => {
   );
 };
 
-interface Glyph {
-  char: string;
-  block: string;
-}
-
-/** Column width of every ANSI Shadow glyph used in the logos above. */
-const GLYPH_WIDTHS: Record<string, number> = { A: 8, E: 8, K: 8, N: 10, O: 9, P: 8, R: 8, S: 8, T: 9, W: 10 };
-
-const DOTS_WIDTH = Math.max(...ASCII_DOTS.map((row) => row.length));
-const DOTS_GAP = 1;
-
-/** Cuts the art into one block per letter, so a letter can be marked as a whole. */
-const splitAsciiLetters = (ascii: string, word: string): Glyph[] => {
-  const rows = ascii.split("\n");
-  const width = Math.max(...rows.map((row) => row.length));
-  const padded = rows.map((row) => row.padEnd(width, " "));
-  let column = 0;
-  return [...word].map((char) => {
-    const glyphWidth = GLYPH_WIDTHS[char] ?? 8;
-    const block = padded.map((row) => row.slice(column, column + glyphWidth)).join("\n");
-    column += glyphWidth;
-    return { char, block };
-  });
-};
-
-const rowsOf = (glyph: Glyph) => glyph.block.split("\n");
-const columnsOf = (glyph: Glyph) => rowsOf(glyph)[0].length;
-const mapRows = (glyph: Glyph, f: (row: string, i: number) => string): Glyph =>
-  ({ char: glyph.char, block: rowsOf(glyph).map(f).join("\n") });
-
-/** Sets the ellipsis on the baseline, one column clear of the letter it follows. */
-const withDots = (glyph: Glyph): Glyph => {
-  const firstDotRow = rowsOf(glyph).length - ASCII_DOTS.length;
-  return mapRows(glyph, (row, i) => {
-    const dots = ASCII_DOTS[i - firstDotRow];
-    return dots ? row + " ".repeat(DOTS_GAP) + dots : row;
-  });
-};
-
-/**
- * Cuts the mark down to `capacity` columns. Letters go away whole rather than
- * half drawn, and the ellipsis closes up against the last letter still on
- * screen — right where the vanished one began.
- */
-const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
-  const total = glyphs.reduce((sum, glyph) => sum + columnsOf(glyph), 0);
-  if (capacity <= 0 || total <= capacity) return glyphs;
-
-  const room = Math.max(capacity - DOTS_WIDTH - DOTS_GAP, 0);
-  const kept: Glyph[] = [];
-  let used = 0;
-  for (const glyph of glyphs) {
-    if (used + columnsOf(glyph) > room) break;
-    kept.push(glyph);
-    used += columnsOf(glyph);
-  }
-  // Not even the first letter fits: the mark is nothing but its own ellipsis.
-  if (kept.length === 0) return [mapRows({ char: "", block: glyphs[0].block }, () => "")].map(withDots);
-  return [...kept.slice(0, -1), withDots(kept[kept.length - 1])];
-};
-
 /**
  * The ASCII wordmark stays on screen at every width — no swapping it out for
- * plain text. It is only cut down, letter by letter, once it runs into the edge
- * of the window, which for a short mark like KPN never happens. A cut is marked
- * by the font's own ellipsis, three big dots on the baseline.
+ * plain text. It is only cut down, column by column, once it runs into the edge
+ * of the window, which for a short mark like KPN never happens. It loses whole
+ * letters, never half a glyph, and the font's own ellipsis — three big dots on
+ * the baseline — follows the last letter left standing.
  *
  * The art is six rows of box drawing characters, so marking it natively drags
  * through those rows rather than through the letters they draw. Every letter is
@@ -271,15 +216,15 @@ const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
  */
 const AsciiLogo = ({ exp }: { exp: Experience }) => {
   const [ref, capacity] = useCharCapacity<HTMLPreElement>();
-  const glyphs = clipGlyphs(splitAsciiLetters(exp.asciiLogo, exp.asciiWord), capacity);
+  const letters = clipAscii(exp.asciiLogo, exp.letterWidths, capacity);
 
-  const glyphAt = (clientX: number) => {
+  const letterAt = (clientX: number) => {
     const rendered = Array.from(ref.current?.children ?? []);
-    const index = rendered.findIndex((glyph) => clientX < glyph.getBoundingClientRect().right);
+    const index = rendered.findIndex((letter) => clientX < letter.getBoundingClientRect().right);
     return index === -1 ? rendered.length - 1 : index;
   };
 
-  const selectGlyphs = (from: number, to: number) => {
+  const selectLetters = (from: number, to: number) => {
     const rendered = ref.current?.children;
     if (!rendered?.length) return;
     const range = document.createRange();
@@ -296,12 +241,12 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
     // Nothing is marked until the pointer actually moves — same as plain text.
     window.getSelection()?.removeAllRanges();
 
-    const anchor = glyphAt(e.clientX);
+    const anchor = letterAt(e.clientX);
     const wordmark = e.currentTarget;
     // Captured, so a release outside the window still ends the drag.
     wordmark.setPointerCapture(e.pointerId);
 
-    const handleMove = (move: PointerEvent) => selectGlyphs(anchor, glyphAt(move.clientX));
+    const handleMove = (move: PointerEvent) => selectLetters(anchor, letterAt(move.clientX));
     const handleUp = () => {
       wordmark.removeEventListener("pointermove", handleMove);
       wordmark.removeEventListener("pointerup", handleUp);
@@ -316,11 +261,11 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
     const selection = window.getSelection();
     if (!selection?.rangeCount) return;
     // intersectsNode, not containsNode: the range ends flush against the next
-    // glyph's boundary, which counts as containment but not as an intersection.
+    // letter's boundary, which counts as containment but not as an intersection.
     const range = selection.getRangeAt(0);
     const marked = Array.from(ref.current?.children ?? [])
-      .filter((glyph) => range.intersectsNode(glyph))
-      .map((glyph) => (glyph as HTMLElement).dataset.glyph)
+      .filter((letter) => range.intersectsNode(letter))
+      .map((letter) => (letter as HTMLElement).dataset.letter)
       .join("");
     if (!marked) return;
     e.preventDefault();
@@ -335,9 +280,9 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
       onPointerDown={handlePointerDown}
       onCopy={handleCopy}
     >
-      {glyphs.map((glyph, i) => (
-        <span key={i} data-glyph={glyph.char} className="shrink-0">
-          {glyph.block}
+      {letters.map((block, i) => (
+        <span key={i} data-letter={exp.asciiWord[i] ?? ""} className="shrink-0">
+          {block}
         </span>
       ))}
     </pre>
