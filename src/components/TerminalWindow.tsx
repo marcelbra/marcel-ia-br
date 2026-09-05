@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
+import { ReactNode, useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 
 const ClosedMessage = () => {
@@ -25,19 +25,72 @@ interface TerminalWindowProps {
 }
 
 const STORAGE_KEY = "terminal-offset";
+const SIZE_KEY = "terminal-size";
+const ZOOM_KEY = "terminal-zoom";
 const CLOSED_KEY = "terminal-closed";
 const MARGIN = 12;
+const MIN_W = 320;
+const MIN_H = 160;
+const ZOOM_MS = 200;
 
-const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+type Offset = { x: number; y: number };
+type Size = { w: number; h: number };
+/** The geometry a zoomed window returns to on the second double-click. */
+type Geometry = { offset: Offset; size: Size | null };
 
-const loadOffset = () => {
+type Direction = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+const HANDLES: { dir: Direction; className: string }[] = [
+  { dir: "n", className: "top-0 left-0 right-0 h-1.5 cursor-ns-resize" },
+  { dir: "s", className: "bottom-0 left-0 right-0 h-1.5 cursor-ns-resize" },
+  { dir: "w", className: "top-0 bottom-0 left-0 w-1.5 cursor-ew-resize" },
+  { dir: "e", className: "top-0 bottom-0 right-0 w-1.5 cursor-ew-resize" },
+  { dir: "nw", className: "top-0 left-0 w-3 h-3 cursor-nwse-resize z-10" },
+  { dir: "ne", className: "top-0 right-0 w-3 h-3 cursor-nesw-resize z-10" },
+  { dir: "sw", className: "bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-10" },
+  { dir: "se", className: "bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-10" },
+];
+
+const readJSON = <T,>(key: string): T | null => {
   try {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved) as { x: number; y: number };
+    const saved = sessionStorage.getItem(key);
+    if (saved) return JSON.parse(saved) as T;
   } catch {
-    // sessionStorage unavailable or holds malformed JSON; fall back to origin
+    // sessionStorage unavailable or holds malformed JSON; fall back to the default
   }
-  return { x: 0, y: 0 };
+  return null;
+};
+
+const writeJSON = (key: string, value: unknown) => {
+  try {
+    if (value === null) sessionStorage.removeItem(key);
+    else sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // sessionStorage unavailable; the geometry just won't survive a reload
+  }
+};
+
+/**
+ * Travel allowed for one axis while dragging. The bounds are swapped when the
+ * window is bigger than the area it should stay inside (it then slides until it
+ * covers that area), and always widened to include where the window already is,
+ * so grabbing the title bar never yanks the window somewhere else first.
+ */
+const dragRange = (min: number, max: number, current: number): [number, number] => [
+  Math.min(min, max, current),
+  Math.max(min, max, current),
+];
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
+
+/** The strip of viewport left between the fixed header and the footer. */
+const chromeBounds = () => {
+  const header = document.querySelector("header");
+  const footer = document.querySelector("footer");
+  return {
+    top: header ? header.getBoundingClientRect().bottom : 0,
+    bottom: footer ? footer.getBoundingClientRect().top : window.innerHeight,
+  };
 };
 
 const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMinimize, onFullscreen, onClose, onBooted, disableFullscreen }: TerminalWindowProps) => {
@@ -47,15 +100,30 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const [bootPhase, setBootPhase] = useState<'spinning' | 'almost'>('spinning');
   const [spinFrame, setSpinFrame] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
-  const [offset, setOffset] = useState(() => wasClosed ? { x: 0, y: 0 } : loadOffset());
-  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const [offset, setOffset] = useState<Offset>(() => (wasClosed ? { x: 0, y: 0 } : readJSON<Offset>(STORAGE_KEY) ?? { x: 0, y: 0 }));
+  const [size, setSize] = useState<Size | null>(() => (wasClosed ? null : readJSON<Size>(SIZE_KEY)));
+  // Non-null exactly while the window is zoomed; it holds the geometry to go back to.
+  const [restore, setRestore] = useState<Geometry | null>(() => (wasClosed ? null : readJSON<Geometry>(ZOOM_KEY)));
+  const [animating, setAnimating] = useState(false);
+  // True once the window has been resized over the header or footer, which have
+  // to give way then — otherwise the title bar would sit under them, unusable.
+  const [overChrome, setOverChrome] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; rangeX: [number, number]; rangeY: [number, number] } | null>(null);
+  const resizeRef = useRef<{ dir: Direction; startX: number; startY: number; baseLeft: number; baseTop: number; left: number; top: number; right: number; bottom: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animTimer = useRef<ReturnType<typeof setTimeout>>();
+  const offsetRef = useRef(offset);
+  offsetRef.current = offset;
+
+  const zoomed = restore !== null;
 
   // On mount: if was closed, clear flag, reset position, show loader for 1s
   useEffect(() => {
     if (wasClosed) {
       sessionStorage.removeItem(CLOSED_KEY);
       sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(SIZE_KEY);
+      sessionStorage.removeItem(ZOOM_KEY);
       setBootPhase('spinning');
       const phaseTimer = setTimeout(() => setBootPhase('almost'), 1500);
       const timer = setTimeout(() => { setBooting(false); onBooted?.(); }, 3000);
@@ -70,58 +138,126 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     return () => clearInterval(interval);
   }, [booting]);
 
+  useEffect(() => () => clearTimeout(animTimer.current), []);
+
+  const startAnim = () => {
+    setAnimating(true);
+    clearTimeout(animTimer.current);
+    animTimer.current = setTimeout(() => setAnimating(false), ZOOM_MS + 20);
+  };
+
   const handleClose = () => {
     setClosed(true);
     sessionStorage.setItem(CLOSED_KEY, "true");
     sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SIZE_KEY);
+    sessionStorage.removeItem(ZOOM_KEY);
     onClose?.();
   };
 
-  const clampOffset = useCallback((x: number, y: number) => {
+  /** Stretch the window to every edge of the viewport. */
+  const fillViewport = useCallback(() => {
     const el = containerRef.current;
-    if (!el) return { x, y };
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const elW = rect.width;
-    const elH = rect.height;
-    const baseTop = rect.top - offset.y;
-    const baseLeft = rect.left - offset.x;
+    setOffset({ x: -(rect.left - offsetRef.current.x), y: -(rect.top - offsetRef.current.y) });
+    setSize({ w: window.innerWidth, h: window.innerHeight });
+  }, []);
 
-    const header = document.querySelector("header");
-    const footer = document.querySelector("footer");
-    const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
-    const footerTop = footer ? footer.getBoundingClientRect().top : window.innerHeight;
+  // While zoomed the window owns the whole viewport, so it has to follow it.
+  useEffect(() => {
+    if (!zoomed) return;
+    fillViewport();
+    window.addEventListener("resize", fillViewport);
+    return () => window.removeEventListener("resize", fillViewport);
+  }, [zoomed, fillViewport]);
 
-    const minY = headerBottom + MARGIN - baseTop;
-    const maxY = footerTop - MARGIN - baseTop - elH;
-    const minX = -baseLeft + MARGIN;
-    const maxX = window.innerWidth - baseLeft - elW - MARGIN;
+  const toggleZoom = useCallback(() => {
+    if (restore) {
+      setOffset(restore.offset);
+      setSize(restore.size);
+      setRestore(null);
+    } else {
+      // The effect above turns this into the full-viewport geometry.
+      setRestore({ offset, size });
+    }
+    startAnim();
+  }, [restore, offset, size]);
 
-    return {
-      x: Math.max(minX, Math.min(x, maxX)),
-      y: Math.max(minY, Math.min(y, maxY)),
-    };
-  }, [offset]);
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.group\\/btns')) return;
+    toggleZoom();
+  }, [toggleZoom]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (fullscreen) return;
+    if (zoomed) return;
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
-    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: offset.x, origY: offset.y };
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const baseLeft = rect.left - offset.x;
+    const baseTop = rect.top - offset.y;
+
+    const { top: headerBottom, bottom: footerTop } = chromeBounds();
+
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: offset.x,
+      origY: offset.y,
+      rangeX: dragRange(MARGIN - baseLeft, window.innerWidth - baseLeft - rect.width - MARGIN, offset.x),
+      rangeY: dragRange(headerBottom + MARGIN - baseTop, footerTop - MARGIN - baseTop - rect.height, offset.y),
+    };
     e.preventDefault();
-  }, [offset, fullscreen]);
+  }, [offset, zoomed]);
+
+  const handleResizeDown = useCallback((dir: Direction) => (e: React.MouseEvent) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    resizeRef.current = {
+      dir,
+      startX: e.clientX,
+      startY: e.clientY,
+      baseLeft: rect.left - offset.x,
+      baseTop: rect.top - offset.y,
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    };
+    // Resizing a zoomed window means it is no longer zoomed — it keeps the size
+    // it is being given, and the next double-click fills the viewport again.
+    setRestore(null);
+    setAnimating(false);
+    e.preventDefault();
+  }, [offset]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      const newOffset = clampOffset(dragRef.current.origX + dx, dragRef.current.origY + dy);
-      setOffset(newOffset);
+      const r = resizeRef.current;
+      if (r) {
+        const dx = e.clientX - r.startX;
+        const dy = e.clientY - r.startY;
+        let { left, top, right, bottom } = r;
+        if (r.dir.includes("e")) right = clamp(r.right + dx, left + MIN_W, window.innerWidth);
+        if (r.dir.includes("w")) left = clamp(r.left + dx, 0, right - MIN_W);
+        if (r.dir.includes("s")) bottom = clamp(r.bottom + dy, top + MIN_H, window.innerHeight);
+        if (r.dir.includes("n")) top = clamp(r.top + dy, 0, bottom - MIN_H);
+        setOffset({ x: left - r.baseLeft, y: top - r.baseTop });
+        setSize({ w: right - left, h: bottom - top });
+        return;
+      }
+      const d = dragRef.current;
+      if (!d) return;
+      setOffset({
+        x: clamp(d.origX + e.clientX - d.startX, d.rangeX[0], d.rangeX[1]),
+        y: clamp(d.origY + e.clientY - d.startY, d.rangeY[0], d.rangeY[1]),
+      });
     };
     const handleMouseUp = () => {
-      if (dragRef.current) {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
-      }
       dragRef.current = null;
+      resizeRef.current = null;
     };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
@@ -129,11 +265,19 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [clampOffset, offset]);
+  }, []);
 
-  useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(offset));
-  }, [offset]);
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const chrome = chromeBounds();
+    setOverChrome(rect.top < chrome.top || rect.bottom > chrome.bottom);
+  }, [offset, size]);
+
+  useEffect(() => { writeJSON(STORAGE_KEY, offset); }, [offset]);
+  useEffect(() => { writeJSON(SIZE_KEY, size); }, [size]);
+  useEffect(() => { writeJSON(ZOOM_KEY, restore); }, [restore]);
 
   if (closed) {
     return (
@@ -205,13 +349,16 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full rounded-xl overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in"
-      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+      data-testid="terminal-window"
+      data-zoomed={zoomed || undefined}
+      className={`relative flex flex-col h-full overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${zoomed ? 'rounded-none' : 'rounded-xl'} ${zoomed || overChrome ? 'z-[60]' : ''} ${animating ? 'transition-[transform,width,height] duration-200 ease-out' : ''}`}
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, width: size?.w, height: size?.h }}
     >
-      {/* Title bar - drag handle */}
+      {/* Title bar - drag handle, double-click to zoom */}
       <div
         onMouseDown={handleMouseDown}
-        className="flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default"
+        onDoubleClick={handleDoubleClick}
+        className={`flex items-center gap-2 px-4 h-8 bg-[hsl(210,5%,18%)] shrink-0 select-none cursor-default`}
       >
         <div className="group/btns flex items-center gap-1.5">
           <span
@@ -241,6 +388,16 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       <div className="flex-1 flex flex-col bg-background overflow-hidden">
         {children}
       </div>
+      {/* Resize handles */}
+      {HANDLES.map(({ dir, className }) => (
+        <div
+          key={dir}
+          aria-hidden
+          data-resize={dir}
+          onMouseDown={handleResizeDown(dir)}
+          className={`absolute ${className}`}
+        />
+      ))}
     </div>
   );
 };
