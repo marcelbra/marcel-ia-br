@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
+import { ReactNode, useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 
 const ClosedMessage = () => {
@@ -111,6 +111,9 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const zoomed = restore !== null;
   const zoomedRef = useRef(zoomed);
   zoomedRef.current = zoomed;
+  // Set once the window has been moved, resized or zoomed by hand: until then it
+  // keeps following the layout when the viewport changes.
+  const touchedRef = useRef(false);
 
   // On mount: if was closed, clear flag, reset position, show loader for 1s
   useEffect(() => {
@@ -163,6 +166,14 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     setSize({ w: b.right - b.left, h: b.bottom - b.top });
   }, []);
 
+  /** The box the window occupies when it is left alone: the slot it sits in. */
+  const resetToNatural = useCallback(() => {
+    const parent = containerRef.current?.parentElement;
+    if (!parent) return;
+    setOffset({ x: 0, y: 0 });
+    setSize({ w: parent.clientWidth, h: parent.clientHeight });
+  }, []);
+
   /** Pull a hand-sized window back inside the bounds after the viewport changed. */
   const fitInBounds = useCallback(() => {
     const el = containerRef.current;
@@ -176,25 +187,44 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     setSize({ w, h });
   }, []);
 
+  // A width of `auto` cannot be interpolated, so the window would jump to its
+  // zoomed width in one frame while the rest of the geometry animated. Measuring
+  // the natural box once gives every later change two concrete lengths to move
+  // between, and the whole window then grows in every direction at once.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (!sizeRef.current) {
+      const rect = el.getBoundingClientRect();
+      sizeRef.current = { w: rect.width, h: rect.height };
+      setSize(sizeRef.current);
+    }
+    if (zoomedRef.current) fillBounds(); else fitInBounds();
+  }, [booting, fillBounds, fitInBounds]);
+
   // The bounds move with the viewport, so the window has to follow them.
   useEffect(() => {
-    const follow = () => (zoomedRef.current ? fillBounds() : fitInBounds());
-    follow();
+    const follow = () => {
+      if (zoomedRef.current) fillBounds();
+      else if (touchedRef.current) fitInBounds();
+      else resetToNatural();
+    };
     window.addEventListener("resize", follow);
     return () => window.removeEventListener("resize", follow);
-  }, [zoomed, fillBounds, fitInBounds]);
+  }, [fillBounds, fitInBounds, resetToNatural]);
 
   const toggleZoom = useCallback(() => {
+    touchedRef.current = true;
+    startAnim();
     if (restore) {
       setOffset(restore.offset);
       setSize(restore.size);
       setRestore(null);
-    } else {
-      // The effect above stretches this across the bounds.
-      setRestore({ offset, size });
+      return;
     }
-    startAnim();
-  }, [restore, offset, size]);
+    setRestore({ offset, size });
+    fillBounds();
+  }, [restore, offset, size, fillBounds]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
@@ -206,6 +236,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
     const el = containerRef.current;
     if (!el) return;
+    touchedRef.current = true;
     const rect = el.getBoundingClientRect();
     const base = origin(rect);
     const b = bounds();
@@ -224,6 +255,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const handleResizeDown = useCallback((dir: Direction) => (e: React.MouseEvent) => {
     const el = containerRef.current;
     if (!el) return;
+    touchedRef.current = true;
     const rect = el.getBoundingClientRect();
     const base = origin(rect);
     resizeRef.current = {
