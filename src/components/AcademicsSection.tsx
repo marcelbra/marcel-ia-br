@@ -156,8 +156,8 @@ const AcademicsSection = () => {
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {entries.map((entry, i) => (
-        <div key={i} className="h-full flex flex-col justify-center px-6">
-          <div className="max-w-3xl mx-auto w-full">
+        <div key={i} className="h-full flex flex-col px-6 py-6">
+          <div className="max-w-3xl w-full">
             <div className={`flex items-center ${entry.logoImage ? 'gap-10' : 'gap-4'} mb-6`}>
               <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
               <div>

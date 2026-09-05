@@ -28,6 +28,10 @@ const STORAGE_KEY = "terminal-offset";
 const SIZE_KEY = "terminal-size";
 const ZOOM_KEY = "terminal-zoom";
 const CLOSED_KEY = "terminal-closed";
+// How far the pointer has to travel before a press counts as a drag. Without it
+// the hand tremor during a double-click tugs the window a couple of pixels, and
+// the zoom that follows pulls it back — which reads as a wobble.
+const DRAG_SLOP = 4;
 const MIN_W = 320;
 const MIN_H = 160;
 // AppKit animates a window's geometry over NSWindowResizeTime — 0.2s per 150px
@@ -121,6 +125,9 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   // Milliseconds while a zoom is running, 0 the rest of the time — the window has
   // to follow the pointer exactly during a drag or a resize.
   const [animMs, setAnimMs] = useState(0);
+  // A press that has not yet travelled far enough to be a drag. Nothing happens
+  // — no move, no resize, no interrupting a running zoom — until it has.
+  const pendingRef = useRef<{ dir: Direction | null; startX: number; startY: number } | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; rangeX: [number, number]; rangeY: [number, number] } | null>(null);
   const resizeRef = useRef<{ dir: Direction; startX: number; startY: number; baseLeft: number; baseTop: number; left: number; top: number; right: number; bottom: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -289,52 +296,73 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (zoomed) return;
+    // The second press of a double-click is never the start of a drag.
+    if (e.detail > 1) return;
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
-    const el = containerRef.current;
-    if (!el) return;
-    touchedRef.current = true;
-    const rect = el.getBoundingClientRect();
-    const base = origin(rect);
-    settle(rect, base);
-    const b = bounds();
-
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      origX: offset.x,
-      origY: offset.y,
-      rangeX: [b.left - base.left, b.right - rect.width - base.left],
-      rangeY: [b.top - base.top, b.bottom - rect.height - base.top],
-    };
+    pendingRef.current = { dir: null, startX: e.clientX, startY: e.clientY };
     e.preventDefault();
-  }, [offset, zoomed]);
+  }, [zoomed]);
 
   const handleResizeDown = useCallback((dir: Direction) => (e: React.MouseEvent) => {
-    const el = containerRef.current;
-    if (!el) return;
-    touchedRef.current = true;
-    const rect = el.getBoundingClientRect();
-    const base = origin(rect);
-    settle(rect, base);
-    resizeRef.current = {
-      dir,
-      startX: e.clientX,
-      startY: e.clientY,
-      baseLeft: base.left,
-      baseTop: base.top,
-      left: rect.left,
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom,
-    };
-    // Resizing a zoomed window means it is no longer zoomed — it keeps the size
-    // it is being given, and the next double-click fills the bounds again.
-    setRestore(null);
+    pendingRef.current = { dir, startX: e.clientX, startY: e.clientY };
     e.preventDefault();
   }, []);
 
+  /**
+   * Turn a press that has travelled far enough into the gesture it was after.
+   * Both the window and the pointer are read here rather than at mousedown, so
+   * a gesture that starts during a zoom picks up where the window actually is
+   * and keeps the grab under the cursor.
+   */
+  const beginGesture = (dir: Direction | null, startX: number, startY: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    touchedRef.current = true;
+    const rect = el.getBoundingClientRect();
+    const base = origin(rect);
+    settle(rect, base);
+
+    if (dir) {
+      resizeRef.current = {
+        dir,
+        startX,
+        startY,
+        baseLeft: base.left,
+        baseTop: base.top,
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      };
+      // Resizing a zoomed window means it is no longer zoomed — it keeps the
+      // size it is given, and the next double-click fills the bounds again.
+      setRestore(null);
+      return;
+    }
+
+    const b = bounds();
+    dragRef.current = {
+      startX,
+      startY,
+      origX: rect.left - base.left,
+      origY: rect.top - base.top,
+      rangeX: [b.left - base.left, b.right - rect.width - base.left],
+      rangeY: [b.top - base.top, b.bottom - rect.height - base.top],
+    };
+  };
+  // The pointer listeners are registered once; this keeps them calling the
+  // current closure rather than the one from the first render.
+  const beginRef = useRef(beginGesture);
+  beginRef.current = beginGesture;
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      const p = pendingRef.current;
+      if (p) {
+        if (Math.hypot(e.clientX - p.startX, e.clientY - p.startY) < DRAG_SLOP) return;
+        pendingRef.current = null;
+        beginRef.current(p.dir, e.clientX, e.clientY);
+      }
       const r = resizeRef.current;
       if (r) {
         const dx = e.clientX - r.startX;
@@ -357,6 +385,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       });
     };
     const handleMouseUp = () => {
+      pendingRef.current = null;
       dragRef.current = null;
       resizeRef.current = null;
     };

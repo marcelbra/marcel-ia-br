@@ -49,22 +49,33 @@ const setup = () => {
 
 const rect = (el: HTMLElement) => el.getBoundingClientRect();
 
+/**
+ * A press only becomes a drag once the pointer has cleared the drag threshold,
+ * and the window starts following from there — so a real pointer always sends
+ * that first move before the travel that is meant to move anything. SLOP is
+ * added to both, which cancels out and leaves the asked-for travel.
+ */
+const SLOP = 8;
+
+const press = (target: Element | Window, from: { x: number; y: number }) => {
+  fireEvent.mouseDown(target, { clientX: from.x, clientY: from.y });
+  fireEvent.mouseMove(window, { clientX: from.x + SLOP, clientY: from.y + SLOP });
+};
+
 const dragHandle = (win: HTMLElement, dir: string, to: { x: number; y: number }) => {
   const handle = win.querySelector(`[data-resize="${dir}"]`)!;
   const from = rect(win);
-  const grip = {
+  press(handle, {
     x: dir.includes("w") ? from.left : dir.includes("e") ? from.right : from.left,
     y: dir.includes("n") ? from.top : dir.includes("s") ? from.bottom : from.top,
-  };
-  fireEvent.mouseDown(handle, { clientX: grip.x, clientY: grip.y });
-  fireEvent.mouseMove(window, { clientX: to.x, clientY: to.y });
+  });
+  fireEvent.mouseMove(window, { clientX: to.x + SLOP, clientY: to.y + SLOP });
   fireEvent.mouseUp(window);
 };
 
 const dragTitleBy = (dx: number, dy: number) => {
-  const title = screen.getByText("~/marcel");
-  fireEvent.mouseDown(title, { clientX: 400, clientY: 200 });
-  fireEvent.mouseMove(window, { clientX: 400 + dx, clientY: 200 + dy });
+  press(screen.getByText("~/marcel"), { x: 400, y: 200 });
+  fireEvent.mouseMove(window, { clientX: 400 + dx + SLOP, clientY: 200 + dy + SLOP });
   fireEvent.mouseUp(window);
 };
 
@@ -172,6 +183,29 @@ describe("TerminalWindow", () => {
 
     dragHandle(win, "nw", { x: -400, y: -400 });
     expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM });
+  });
+
+  it("does not move for the hand tremor of a double-click", () => {
+    const win = setup();
+    const title = screen.getByText("~/marcel");
+    const { left, top } = rect(win);
+
+    // A press that drifts a couple of pixels is a click, not a drag. Without
+    // this the window is tugged and the zoom then pulls it back — a wobble.
+    fireEvent.mouseDown(title, { clientX: 400, clientY: 200 });
+    fireEvent.mouseMove(window, { clientX: 403, clientY: 202 });
+    fireEvent.mouseUp(window);
+    expect(rect(win)).toMatchObject({ left, top });
+
+    // Neither is the second press of a double-click, however far it drifts.
+    fireEvent.mouseDown(title, { clientX: 400, clientY: 200, detail: 2 });
+    fireEvent.mouseMove(window, { clientX: 440, clientY: 250 });
+    fireEvent.mouseUp(window);
+    expect(rect(win)).toMatchObject({ left, top });
+
+    // A press that means it still moves the window.
+    dragTitleBy(30, 40);
+    expect(rect(win)).toMatchObject({ left: left + 30, top: top + 40 });
   });
 
   it("cannot be dragged past the header or the footer", () => {
