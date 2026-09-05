@@ -195,11 +195,16 @@ const Hero = () => {
   return (
     <section className="max-w-3xl mx-auto w-full">
       <div>
-        <div className="mb-8 hidden md:flex items-end gap-6" aria-hidden="true">
+        {/* One header block at every width. It used to swap to a "JDOE" placeholder
+            below md, which changed the block's height by ~40px and shunted the whole
+            centred column. Scaling the banner and the avatar together keeps the step
+            small. The negative margin offsets the ~15% transparent padding under the
+            feet at each size, so they stay on the banner's baseline. */}
+        <div className="mb-8 flex items-end gap-3 sm:gap-5 md:gap-6" aria-hidden="true">
           <pre
             ref={welcomeRef}
             onMouseEnter={handleWelcomeEnter}
-            className="text-hoodie-blue text-[10px] leading-[1.15] tracking-[0.02em] font-bold cursor-default"
+            className="text-hoodie-blue text-[5px] sm:text-[8px] md:text-[10px] leading-[1.15] tracking-[0.02em] font-bold cursor-default"
           >{`
 ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
 ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝
@@ -209,20 +214,18 @@ const Hero = () => {
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
           <div className="relative">
-            {/* Every frame carries ~15% transparent padding below the feet, so items-end
-                alone leaves the character floating. Pull it down to sit the feet on the
-                WELCOME baseline (the padding, less the pre's trailing line leading). */}
-            <img src={AVATAR_FRAMES[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-[10.14rem] w-auto mb-[-1.22rem] cursor-default" onMouseEnter={handleWelcomeEnter} />
+            <img
+              src={AVATAR_FRAMES[frameIndex]}
+              alt="Marcel Braasch pixel avatar"
+              className="h-[4.5rem] sm:h-[7.6rem] md:h-[10.14rem] w-auto mb-[-0.58rem] sm:mb-[-0.93rem] md:mb-[-1.22rem] cursor-default"
+              onMouseEnter={handleWelcomeEnter}
+            />
             {showBubble && (
               <div className="absolute -top-3 -right-20 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-bl-none border-2 border-hoodie-blue shadow-[0_2px_12px_rgba(255,255,255,0.15)] whitespace-nowrap animate-fade-in">
                 Hey there!
               </div>
             )}
           </div>
-        </div>
-        <div className="mb-8 md:hidden flex items-center gap-4" aria-hidden="true">
-          <span className="text-ansi-yellow text-2xl font-bold tracking-widest">JDOE</span>
-          <img src={AVATAR_FRAMES[frameIndex]} alt="Marcel Braasch pixel avatar" className="h-16 w-auto" />
         </div>
 
         <div className="text-muted-foreground mb-6">
@@ -241,7 +244,7 @@ const Hero = () => {
           <span className="text-muted-foreground">:</span>{" "}
           <span className="cursor-default" onMouseEnter={() => { roleScramble(); handleWelcomeEnter(); }} onMouseLeave={() => roleUnscramble()}>{roleDisplay}</span>
         </p>
-        <p className="text-muted-foreground mb-6 max-w-2xl">
+        <p className="text-muted-foreground mb-6 max-w-2xl min-h-[7.5rem] sm:min-h-[4.5rem] md:min-h-[3rem]">
           <span className="text-hoodie-blue">bio</span>
           <span className="text-muted-foreground">:</span>{" "}
           <span className="text-foreground">

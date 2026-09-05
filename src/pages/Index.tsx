@@ -104,20 +104,20 @@ const Index = () => {
   return (
     <div className={`bg-background flex flex-col ${expanded ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
       <Header activeSection={activeSection} onNavigate={navigateToSection} disabled={terminalClosed} />
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-20 min-h-0">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-20 min-h-0 [@media(max-height:640px)]:pt-16 [@media(max-height:640px)]:pb-8 [@media(max-height:480px)]:pt-14 [@media(max-height:480px)]:pb-4">
         <div className="w-full max-w-4xl h-full">
           {expanded ? (
             <div className="py-6">
               {renderContent()}
             </div>
           ) : minimized ? (
-            <div className="h-[70vh] flex items-center justify-center">
+            <div className="h-full max-h-[70vh] flex items-center justify-center">
               <span className="font-mono text-sm text-muted-foreground/40 animate-fade-in">
                 minimized to dock ↓
               </span>
             </div>
           ) : (
-            <div className="h-[70vh]">
+            <div className="h-full max-h-[70vh]">
               <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "writing") setExpanded(true); }} disableFullscreen={activeSection === "cv" || activeSection === "academics"}>
                 <div className="flex-1 overflow-y-auto h-full">
                   {renderContent()}
