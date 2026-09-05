@@ -43,8 +43,8 @@ const Index = () => {
   const renderContent = () => {
       if (activeSection === "marcel") {
       return (
-        <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
-          <div className="max-w-3xl mx-auto w-full">
+        <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
+          <div className={`max-w-3xl w-full ${expanded ? 'mx-auto' : ''}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
@@ -69,8 +69,8 @@ const Index = () => {
 
     if (activeSection === "writing") {
       return (
-        <section className={`px-6 ${expanded ? 'pt-6' : 'min-h-full flex flex-col justify-center'}`}>
-          <div className="max-w-3xl mx-auto w-full">
+        <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
+          <div className={`max-w-3xl w-full ${expanded ? 'mx-auto' : ''}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}

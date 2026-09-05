@@ -279,8 +279,8 @@ const CvSection = () => {
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
-        <div key={i} className="h-full flex flex-col justify-center px-6">
-          <div className="max-w-3xl mx-auto w-full">
+        <div key={i} className="h-full flex flex-col px-6 py-6">
+          <div className="max-w-3xl w-full">
             <div className="flex items-center gap-4 mb-6">
               <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
               <AsciiLogo exp={exp} />
