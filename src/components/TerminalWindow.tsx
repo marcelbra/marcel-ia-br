@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
+import { ReactNode, useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 const ClosedMessage = () => {
@@ -28,7 +28,6 @@ const STORAGE_KEY = "terminal-offset";
 const SIZE_KEY = "terminal-size";
 const ZOOM_KEY = "terminal-zoom";
 const CLOSED_KEY = "terminal-closed";
-const MARGIN = 12;
 const MIN_W = 320;
 const MIN_H = 160;
 const ZOOM_MS = 200;
@@ -70,24 +69,19 @@ const writeJSON = (key: string, value: unknown) => {
   }
 };
 
-/**
- * Travel allowed for one axis while dragging. The bounds are swapped when the
- * window is bigger than the area it should stay inside (it then slides until it
- * covers that area), and always widened to include where the window already is,
- * so grabbing the title bar never yanks the window somewhere else first.
- */
-const dragRange = (min: number, max: number, current: number): [number, number] => [
-  Math.min(min, max, current),
-  Math.max(min, max, current),
-];
-
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
 
-/** The strip of viewport left between the fixed header and the footer. */
-const chromeBounds = () => {
+/**
+ * The area the window lives in: the full width of the viewport, between the
+ * fixed header and the footer. Moving, resizing and zooming all stop here, so
+ * the window can never cover the page chrome or slip off screen.
+ */
+const bounds = () => {
   const header = document.querySelector("header");
   const footer = document.querySelector("footer");
   return {
+    left: 0,
+    right: window.innerWidth,
     top: header ? header.getBoundingClientRect().bottom : 0,
     bottom: footer ? footer.getBoundingClientRect().top : window.innerHeight,
   };
@@ -105,17 +99,18 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   // Non-null exactly while the window is zoomed; it holds the geometry to go back to.
   const [restore, setRestore] = useState<Geometry | null>(() => (wasClosed ? null : readJSON<Geometry>(ZOOM_KEY)));
   const [animating, setAnimating] = useState(false);
-  // True once the window has been resized over the header or footer, which have
-  // to give way then — otherwise the title bar would sit under them, unusable.
-  const [overChrome, setOverChrome] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; rangeX: [number, number]; rangeY: [number, number] } | null>(null);
   const resizeRef = useRef<{ dir: Direction; startX: number; startY: number; baseLeft: number; baseTop: number; left: number; top: number; right: number; bottom: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animTimer = useRef<ReturnType<typeof setTimeout>>();
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
 
   const zoomed = restore !== null;
+  const zoomedRef = useRef(zoomed);
+  zoomedRef.current = zoomed;
 
   // On mount: if was closed, clear flag, reset position, show loader for 1s
   useEffect(() => {
@@ -155,22 +150,39 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     onClose?.();
   };
 
-  /** Stretch the window to every edge of the viewport. */
-  const fillViewport = useCallback(() => {
+  /** Where the window sits before the offset is applied. */
+  const origin = (rect: DOMRect) => ({ left: rect.left - offsetRef.current.x, top: rect.top - offsetRef.current.y });
+
+  /** Stretch the window across the whole area between header and footer. */
+  const fillBounds = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setOffset({ x: -(rect.left - offsetRef.current.x), y: -(rect.top - offsetRef.current.y) });
-    setSize({ w: window.innerWidth, h: window.innerHeight });
+    const base = origin(el.getBoundingClientRect());
+    const b = bounds();
+    setOffset({ x: b.left - base.left, y: b.top - base.top });
+    setSize({ w: b.right - b.left, h: b.bottom - b.top });
   }, []);
 
-  // While zoomed the window owns the whole viewport, so it has to follow it.
+  /** Pull a hand-sized window back inside the bounds after the viewport changed. */
+  const fitInBounds = useCallback(() => {
+    const el = containerRef.current;
+    if (!el || !sizeRef.current) return;
+    const rect = el.getBoundingClientRect();
+    const base = origin(rect);
+    const b = bounds();
+    const w = Math.min(sizeRef.current.w, b.right - b.left);
+    const h = Math.min(sizeRef.current.h, b.bottom - b.top);
+    setOffset({ x: clamp(rect.left, b.left, b.right - w) - base.left, y: clamp(rect.top, b.top, b.bottom - h) - base.top });
+    setSize({ w, h });
+  }, []);
+
+  // The bounds move with the viewport, so the window has to follow them.
   useEffect(() => {
-    if (!zoomed) return;
-    fillViewport();
-    window.addEventListener("resize", fillViewport);
-    return () => window.removeEventListener("resize", fillViewport);
-  }, [zoomed, fillViewport]);
+    const follow = () => (zoomedRef.current ? fillBounds() : fitInBounds());
+    follow();
+    window.addEventListener("resize", follow);
+    return () => window.removeEventListener("resize", follow);
+  }, [zoomed, fillBounds, fitInBounds]);
 
   const toggleZoom = useCallback(() => {
     if (restore) {
@@ -178,7 +190,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       setSize(restore.size);
       setRestore(null);
     } else {
-      // The effect above turns this into the full-viewport geometry.
+      // The effect above stretches this across the bounds.
       setRestore({ offset, size });
     }
     startAnim();
@@ -195,18 +207,16 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const baseLeft = rect.left - offset.x;
-    const baseTop = rect.top - offset.y;
-
-    const { top: headerBottom, bottom: footerTop } = chromeBounds();
+    const base = origin(rect);
+    const b = bounds();
 
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
       origX: offset.x,
       origY: offset.y,
-      rangeX: dragRange(MARGIN - baseLeft, window.innerWidth - baseLeft - rect.width - MARGIN, offset.x),
-      rangeY: dragRange(headerBottom + MARGIN - baseTop, footerTop - MARGIN - baseTop - rect.height, offset.y),
+      rangeX: [b.left - base.left, b.right - rect.width - base.left],
+      rangeY: [b.top - base.top, b.bottom - rect.height - base.top],
     };
     e.preventDefault();
   }, [offset, zoomed]);
@@ -215,23 +225,24 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    const base = origin(rect);
     resizeRef.current = {
       dir,
       startX: e.clientX,
       startY: e.clientY,
-      baseLeft: rect.left - offset.x,
-      baseTop: rect.top - offset.y,
+      baseLeft: base.left,
+      baseTop: base.top,
       left: rect.left,
       top: rect.top,
       right: rect.right,
       bottom: rect.bottom,
     };
     // Resizing a zoomed window means it is no longer zoomed — it keeps the size
-    // it is being given, and the next double-click fills the viewport again.
+    // it is being given, and the next double-click fills the bounds again.
     setRestore(null);
     setAnimating(false);
     e.preventDefault();
-  }, [offset]);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -240,10 +251,11 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         const dx = e.clientX - r.startX;
         const dy = e.clientY - r.startY;
         let { left, top, right, bottom } = r;
-        if (r.dir.includes("e")) right = clamp(r.right + dx, left + MIN_W, window.innerWidth);
-        if (r.dir.includes("w")) left = clamp(r.left + dx, 0, right - MIN_W);
-        if (r.dir.includes("s")) bottom = clamp(r.bottom + dy, top + MIN_H, window.innerHeight);
-        if (r.dir.includes("n")) top = clamp(r.top + dy, 0, bottom - MIN_H);
+        const b = bounds();
+        if (r.dir.includes("e")) right = clamp(r.right + dx, left + MIN_W, b.right);
+        if (r.dir.includes("w")) left = clamp(r.left + dx, b.left, right - MIN_W);
+        if (r.dir.includes("s")) bottom = clamp(r.bottom + dy, top + MIN_H, b.bottom);
+        if (r.dir.includes("n")) top = clamp(r.top + dy, b.top, bottom - MIN_H);
         setOffset({ x: left - r.baseLeft, y: top - r.baseTop });
         setSize({ w: right - left, h: bottom - top });
         return;
@@ -266,14 +278,6 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const chrome = chromeBounds();
-    setOverChrome(rect.top < chrome.top || rect.bottom > chrome.bottom);
-  }, [offset, size]);
 
   useEffect(() => { writeJSON(STORAGE_KEY, offset); }, [offset]);
   useEffect(() => { writeJSON(SIZE_KEY, size); }, [size]);
@@ -351,7 +355,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       ref={containerRef}
       data-testid="terminal-window"
       data-zoomed={zoomed || undefined}
-      className={`relative flex flex-col h-full overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${zoomed ? 'rounded-none' : 'rounded-xl'} ${zoomed || overChrome ? 'z-[60]' : ''} ${animating ? 'transition-[transform,width,height] duration-200 ease-out' : ''}`}
+      className={`relative flex flex-col h-full overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${zoomed ? 'rounded-none' : 'rounded-xl'} ${animating ? 'transition-[transform,width,height] duration-200 ease-out' : ''}`}
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, width: size?.w, height: size?.h }}
     >
       {/* Title bar - drag handle, double-click to zoom */}
