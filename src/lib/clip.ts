@@ -21,21 +21,30 @@ export function clip(text: string, capacity: number): string {
 }
 
 /**
- * Cut a block of ASCII art to `capacity` columns. The cut is marked once, by
- * the block-style ellipsis on the baseline — not by a row of dots on every
- * line, which would read as six separate cuts instead of one wordmark that
- * carries on past the edge.
+ * Cut a wordmark down to `capacity` columns. Letters go whole or not at all —
+ * NEWTONE loses its E, then its W, never half a glyph — and the block-style
+ * ellipsis follows straight after the last letter left standing, so the dots
+ * sit where the letter that just went used to be.
+ *
+ * `letterWidths` is the column width of each letter of `art`, left to right.
  */
-export function clipAscii(art: string, capacity: number): string {
+export function clipAscii(art: string, letterWidths: number[], capacity: number): string {
   const lines = art.split("\n");
-  if (capacity <= 0 || lines.every((line) => line.length <= capacity)) return art;
+  const width = Math.max(...lines.map((line) => line.length));
+  if (capacity <= 0 || width <= capacity) return art;
 
-  const keep = Math.max(0, capacity - ASCII_DOTS_WIDTH - ASCII_DOTS_GAP);
+  let kept = 0;
+  for (const letter of letterWidths) {
+    if (kept + letter + ASCII_DOTS_GAP + ASCII_DOTS_WIDTH > capacity) break;
+    kept += letter;
+  }
+  const gap = kept > 0 ? ASCII_DOTS_GAP : 0;
+
   const firstDotRow = lines.length - ASCII_DOTS.length;
   return lines
     .map((line, i) => {
       const dots = ASCII_DOTS[i - firstDotRow] ?? "";
-      return (line.slice(0, keep).padEnd(keep + ASCII_DOTS_GAP) + dots).slice(0, capacity).trimEnd();
+      return (line.slice(0, kept).padEnd(kept + gap) + dots).slice(0, capacity).trimEnd();
     })
     .join("\n");
 }
