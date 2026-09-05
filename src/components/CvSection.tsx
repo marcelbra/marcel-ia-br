@@ -1,4 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useCharCapacity } from "@/hooks/use-char-capacity";
+import { CLIP_MARK, clip } from "@/lib/clip";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -159,11 +161,51 @@ const experiences: Experience[] = [
   },
 ];
 
-// Column width of every ANSI Shadow glyph used in the logos above.
+interface Segment {
+  text: string;
+  className?: string;
+}
+
+/**
+ * One line of terminal text: it never wraps and never grows its box. Whatever
+ * does not fit the current width is cut off and marked with ASCII dots, so the
+ * card keeps the same height at every window size.
+ */
+const ClippedLine = ({ segments }: { segments: Segment[] }) => {
+  const [ref, capacity] = useCharCapacity<HTMLSpanElement>();
+  const full = segments.map((segment) => segment.text).join("");
+  const shown = clip(full, capacity);
+
+  let cursor = 0;
+  return (
+    <span
+      ref={ref}
+      className="min-w-0 flex-1 overflow-hidden whitespace-nowrap"
+      title={shown === full ? undefined : full}
+    >
+      {segments.map((segment, i) => {
+        const part = shown.slice(cursor, cursor + segment.text.length);
+        cursor += segment.text.length;
+        return part ? (
+          <span key={i} className={segment.className}>
+            {part}
+          </span>
+        ) : null;
+      })}
+    </span>
+  );
+};
+
+interface Glyph {
+  char: string;
+  block: string;
+}
+
+/** Column width of every ANSI Shadow glyph used in the logos above. */
 const GLYPH_WIDTHS: Record<string, number> = { A: 8, E: 8, K: 8, N: 10, O: 9, P: 8, R: 8, S: 8, T: 9, W: 10 };
 
 /** Cuts the art into one block per letter, so a letter can be marked as a whole. */
-const splitAsciiLetters = (ascii: string, word: string) => {
+const splitAsciiLetters = (ascii: string, word: string): Glyph[] => {
   const rows = ascii.split("\n");
   const width = Math.max(...rows.map((row) => row.length));
   const padded = rows.map((row) => row.padEnd(width, " "));
@@ -176,16 +218,43 @@ const splitAsciiLetters = (ascii: string, word: string) => {
   });
 };
 
+const columnsOf = (glyph: Glyph) => glyph.block.split("\n")[0].length;
+const mapRows = (glyph: Glyph, f: (row: string) => string): Glyph =>
+  ({ char: glyph.char, block: glyph.block.split("\n").map(f).join("\n") });
+
+/** clipLines() for a split-up mark: the last letter left on screen carries the mark. */
+const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
+  const total = glyphs.reduce((sum, glyph) => sum + columnsOf(glyph), 0);
+  if (capacity <= 0 || total <= capacity) return glyphs;
+
+  const room = Math.max(capacity - CLIP_MARK.length, 0);
+  const kept: Glyph[] = [];
+  let used = 0;
+  for (const glyph of glyphs) {
+    const take = Math.min(columnsOf(glyph), room - used);
+    if (take <= 0) break;
+    kept.push(mapRows(glyph, (row) => row.slice(0, take)));
+    used += take;
+  }
+  const mark = CLIP_MARK.slice(0, capacity);
+  if (kept.length === 0) return [mapRows(glyphs[0], () => mark)];
+  return [...kept.slice(0, -1), mapRows(kept[kept.length - 1], (row) => row + mark)];
+};
+
 /**
+ * The ASCII wordmark stays on screen at every width — no swapping it out for
+ * plain text. It is only cut down, column by column, once it runs into the edge
+ * of the window, which for a short mark like KPN never happens.
+ *
  * The art is six rows of box drawing characters, so marking it natively drags
- * through those rows rather than through the letters they draw. Dragging is
- * therefore driven by hand and snapped to whole glyphs: the selection always
- * covers every letter between the one the drag started on and the one under the
+ * through those rows rather than through the letters they draw. Every letter is
+ * therefore its own element and the drag is driven by hand: the selection covers
+ * whole letters between the one the drag started on and the one under the
  * pointer, and copying it yields the word instead of the art.
  */
-const AsciiWordmark = ({ ascii, word, className }: { ascii: string; word: string; className?: string }) => {
-  const ref = useRef<HTMLPreElement>(null);
-  const glyphs = splitAsciiLetters(ascii, word);
+const AsciiLogo = ({ exp }: { exp: Experience }) => {
+  const [ref, capacity] = useCharCapacity<HTMLPreElement>();
+  const glyphs = clipGlyphs(splitAsciiLetters(exp.asciiLogo, exp.asciiWord), capacity);
 
   const glyphAt = (clientX: number) => {
     const rendered = Array.from(ref.current?.children ?? []);
@@ -195,7 +264,7 @@ const AsciiWordmark = ({ ascii, word, className }: { ascii: string; word: string
 
   const selectGlyphs = (from: number, to: number) => {
     const rendered = ref.current?.children;
-    if (!rendered) return;
+    if (!rendered?.length) return;
     const range = document.createRange();
     range.setStartBefore(rendered[Math.min(from, to)]);
     range.setEndAfter(rendered[Math.max(from, to)]);
@@ -242,7 +311,13 @@ const AsciiWordmark = ({ ascii, word, className }: { ascii: string; word: string
   };
 
   return (
-    <pre ref={ref} className={className} aria-hidden="true" onPointerDown={handlePointerDown} onCopy={handleCopy}>
+    <pre
+      ref={ref}
+      className={`${exp.color} min-w-0 flex-1 flex overflow-hidden text-[8px] leading-[1.15] tracking-[0.02em] font-bold`}
+      aria-hidden="true"
+      onPointerDown={handlePointerDown}
+      onCopy={handleCopy}
+    >
       {glyphs.map((glyph, i) => (
         <span key={i} data-glyph={glyph.char} className="shrink-0">
           {glyph.block}
@@ -305,15 +380,8 @@ const CvSection = () => {
         <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-4 mb-6">
-              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
-              <div>
-                <AsciiWordmark
-                  ascii={exp.asciiLogo}
-                  word={exp.asciiWord}
-                  className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:flex`}
-                />
-                <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
-              </div>
+              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
+              <AsciiLogo exp={exp} />
             </div>
 
             <div className="mt-2 mb-4 text-muted-foreground">
@@ -321,11 +389,11 @@ const CvSection = () => {
             </div>
 
             <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                <h3 className="text-foreground font-medium text-lg">
-                  {exp.title} <span className={exp.color}>@ {exp.company}</span>
+              <div className="flex items-baseline justify-between gap-2 mb-4">
+                <h3 className="flex min-w-0 flex-1 text-foreground font-medium text-lg">
+                  <ClippedLine segments={[{ text: `${exp.title} ` }, { text: `@ ${exp.company}`, className: exp.color }]} />
                 </h3>
-                <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
+                <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
                   {exp.period}
                 </span>
               </div>
@@ -333,7 +401,7 @@ const CvSection = () => {
                 {exp.bullets.map((bullet, j) => (
                   <li key={j} className="text-[12px] text-muted-foreground flex items-start gap-2">
                     <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
-                    <span>{bullet.text}</span>
+                    <ClippedLine segments={[{ text: bullet.text }]} />
                   </li>
                 ))}
               </ul>
