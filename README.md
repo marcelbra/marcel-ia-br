@@ -24,6 +24,11 @@ Dev server runs at http://localhost:8080.
 - `npm run lint` — ESLint
 - `npm test` — run Vitest tests
 
+## Contributing
+
+Work happens on branches, not on `main`. Open a pull request and merge it once CI
+is green — pushes to `main` deploy straight to production.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
