@@ -69,6 +69,7 @@ interface BulletItem {
 
 interface Experience {
   asciiLogo: string;
+  asciiWord: string;
   logo: string;
   title: string;
   company: string;
@@ -90,6 +91,7 @@ const experiences: Experience[] = [
 ██╔═██╗ ██╔═══╝ ██║╚██╗██║
 ██║  ██╗██║     ██║ ╚████║
 ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝`.trim(),
+    asciiWord: "KPN",
     logo: kpnLogo,
     title: "Machine Learning Engineer",
     company: "Royal KPN N.V.",
@@ -113,6 +115,7 @@ const experiences: Experience[] = [
 ██║╚██╗██║██╔══╝  ██║███╗██║   ██║   ██║   ██║██║╚██╗██║██╔══╝  
 ██║ ╚████║███████╗╚███╔███╔╝   ██║   ╚██████╔╝██║ ╚████║███████╗
 ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝╚══════╝`.trim(),
+    asciiWord: "NEWTONE",
     logo: newtoneLogo,
     title: "Founding AI Engineer",
     company: "Newtone SAS",
@@ -136,6 +139,7 @@ const experiences: Experience[] = [
 ██╔══╝  ██╔══██╗██╔══██║██║╚██╗██║██╔══╝  ██║   ██║╚════██║
 ███████╗██║  ██║██║  ██║██║ ╚████║███████╗╚██████╔╝███████║
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚══════╝`.trim(),
+    asciiWord: "ERANEOS",
     logo: eraneosLogo,
     title: "AI Engineer",
     company: "Eraneos Analytics Germany",
@@ -154,6 +158,99 @@ const experiences: Experience[] = [
     ],
   },
 ];
+
+// Column width of every ANSI Shadow glyph used in the logos above.
+const GLYPH_WIDTHS: Record<string, number> = { A: 8, E: 8, K: 8, N: 10, O: 9, P: 8, R: 8, S: 8, T: 9, W: 10 };
+
+/** Cuts the art into one block per letter, so a letter can be marked as a whole. */
+const splitAsciiLetters = (ascii: string, word: string) => {
+  const rows = ascii.split("\n");
+  const width = Math.max(...rows.map((row) => row.length));
+  const padded = rows.map((row) => row.padEnd(width, " "));
+  let column = 0;
+  return [...word].map((char) => {
+    const glyphWidth = GLYPH_WIDTHS[char] ?? 8;
+    const block = padded.map((row) => row.slice(column, column + glyphWidth)).join("\n");
+    column += glyphWidth;
+    return { char, block };
+  });
+};
+
+/**
+ * The art is six rows of box drawing characters, so marking it natively drags
+ * through those rows rather than through the letters they draw. Dragging is
+ * therefore driven by hand and snapped to whole glyphs: the selection always
+ * covers every letter between the one the drag started on and the one under the
+ * pointer, and copying it yields the word instead of the art.
+ */
+const AsciiWordmark = ({ ascii, word, className }: { ascii: string; word: string; className?: string }) => {
+  const ref = useRef<HTMLPreElement>(null);
+  const glyphs = splitAsciiLetters(ascii, word);
+
+  const glyphAt = (clientX: number) => {
+    const rendered = Array.from(ref.current?.children ?? []);
+    const index = rendered.findIndex((glyph) => clientX < glyph.getBoundingClientRect().right);
+    return index === -1 ? rendered.length - 1 : index;
+  };
+
+  const selectGlyphs = (from: number, to: number) => {
+    const rendered = ref.current?.children;
+    if (!rendered) return;
+    const range = document.createRange();
+    range.setStartBefore(rendered[Math.min(from, to)]);
+    range.setEndAfter(rendered[Math.max(from, to)]);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLPreElement>) => {
+    if (e.button !== 0 || e.pointerType !== "mouse") return;
+    e.preventDefault();
+    // Nothing is marked until the pointer actually moves — same as plain text.
+    window.getSelection()?.removeAllRanges();
+
+    const anchor = glyphAt(e.clientX);
+    const wordmark = e.currentTarget;
+    // Captured, so a release outside the window still ends the drag.
+    wordmark.setPointerCapture(e.pointerId);
+
+    const handleMove = (move: PointerEvent) => selectGlyphs(anchor, glyphAt(move.clientX));
+    const handleUp = () => {
+      wordmark.removeEventListener("pointermove", handleMove);
+      wordmark.removeEventListener("pointerup", handleUp);
+      wordmark.removeEventListener("pointercancel", handleUp);
+    };
+    wordmark.addEventListener("pointermove", handleMove);
+    wordmark.addEventListener("pointerup", handleUp);
+    wordmark.addEventListener("pointercancel", handleUp);
+  };
+
+  const handleCopy = (e: React.ClipboardEvent) => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+    // intersectsNode, not containsNode: the range ends flush against the next
+    // glyph's boundary, which counts as containment but not as an intersection.
+    const range = selection.getRangeAt(0);
+    const marked = Array.from(ref.current?.children ?? [])
+      .filter((glyph) => range.intersectsNode(glyph))
+      .map((glyph) => (glyph as HTMLElement).dataset.glyph)
+      .join("");
+    if (!marked) return;
+    e.preventDefault();
+    e.clipboardData.setData("text/plain", marked);
+  };
+
+  return (
+    <pre ref={ref} className={className} aria-hidden="true" onPointerDown={handlePointerDown} onCopy={handleCopy}>
+      {glyphs.map((glyph, i) => (
+        <span key={i} data-glyph={glyph.char} className="shrink-0">
+          {glyph.block}
+        </span>
+      ))}
+    </pre>
+  );
+};
 
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -210,24 +307,11 @@ const CvSection = () => {
             <div className="flex items-center gap-4 mb-6">
               <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
               <div>
-                <pre
-                  className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block cursor-pointer`}
-                  aria-hidden="true"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    const range = document.createRange();
-                    range.selectNodeContents(e.currentTarget);
-                    const sel = window.getSelection();
-                    sel?.removeAllRanges();
-                    sel?.addRange(range);
-                  }}
-                  onCopy={(e) => {
-                    e.preventDefault();
-                    e.clipboardData.setData("text/plain", exp.company);
-                  }}
-                >
-                  {exp.asciiLogo}
-                </pre>
+                <AsciiWordmark
+                  ascii={exp.asciiLogo}
+                  word={exp.asciiWord}
+                  className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:flex`}
+                />
                 <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
               </div>
             </div>
