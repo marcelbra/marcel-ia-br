@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clip, clipLines } from "./clip";
+import { ASCII_DOTS, clip, clipAscii } from "./clip";
 
 describe("clip", () => {
   it("leaves text that fits alone", () => {
@@ -23,13 +23,29 @@ describe("clip", () => {
   });
 });
 
-describe("clipLines", () => {
-  it("cuts every long line of a block at the same column", () => {
-    const block = "aaaaaaaa\nbbbbbbbb";
-    expect(clipLines(block, 5)).toBe("aa...\nbb...");
+describe("clipAscii", () => {
+  const art = Array.from({ length: 6 }, () => "X".repeat(40)).join("\n");
+
+  it("leaves art that fits alone", () => {
+    expect(clipAscii(art, 40)).toBe(art);
+    expect(clipAscii(art, 80)).toBe(art);
   });
 
-  it("leaves lines that already fit untouched", () => {
-    expect(clipLines("ab\ncd", 5)).toBe("ab\ncd");
+  it("marks the cut once, with the big dots on the baseline", () => {
+    const lines = clipAscii(art, 30).split("\n");
+    expect(lines[4].endsWith(ASCII_DOTS[0])).toBe(true);
+    expect(lines[5].endsWith(ASCII_DOTS[1])).toBe(true);
+    // The rows above carry no dots of their own.
+    expect(lines.slice(0, 4).every((line) => line === "X".repeat(18))).toBe(true);
+  });
+
+  it("never spills past the capacity", () => {
+    for (const capacity of [30, 20, 13, 12, 8, 1]) {
+      expect(clipAscii(art, capacity).split("\n").every((l) => l.length <= capacity)).toBe(true);
+    }
+  });
+
+  it("leaves the art alone while the width is unknown", () => {
+    expect(clipAscii(art, 0)).toBe(art);
   });
 });

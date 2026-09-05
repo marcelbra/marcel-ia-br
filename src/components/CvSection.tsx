@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useCharCapacity } from "@/hooks/use-char-capacity";
-import { CLIP_MARK, clip } from "@/lib/clip";
+import { ASCII_DOTS, clip } from "@/lib/clip";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -204,6 +204,9 @@ interface Glyph {
 /** Column width of every ANSI Shadow glyph used in the logos above. */
 const GLYPH_WIDTHS: Record<string, number> = { A: 8, E: 8, K: 8, N: 10, O: 9, P: 8, R: 8, S: 8, T: 9, W: 10 };
 
+const DOTS_WIDTH = Math.max(...ASCII_DOTS.map((row) => row.length));
+const DOTS_GAP = 1;
+
 /** Cuts the art into one block per letter, so a letter can be marked as a whole. */
 const splitAsciiLetters = (ascii: string, word: string): Glyph[] => {
   const rows = ascii.split("\n");
@@ -218,20 +221,30 @@ const splitAsciiLetters = (ascii: string, word: string): Glyph[] => {
   });
 };
 
-const columnsOf = (glyph: Glyph) => glyph.block.split("\n")[0].length;
-const mapRows = (glyph: Glyph, f: (row: string) => string): Glyph =>
-  ({ char: glyph.char, block: glyph.block.split("\n").map(f).join("\n") });
+const rowsOf = (glyph: Glyph) => glyph.block.split("\n");
+const columnsOf = (glyph: Glyph) => rowsOf(glyph)[0].length;
+const mapRows = (glyph: Glyph, f: (row: string, i: number) => string): Glyph =>
+  ({ char: glyph.char, block: rowsOf(glyph).map(f).join("\n") });
+
+/** Sets the ellipsis on the baseline, one column clear of the letter it follows. */
+const withDots = (glyph: Glyph): Glyph => {
+  const firstDotRow = rowsOf(glyph).length - ASCII_DOTS.length;
+  return mapRows(glyph, (row, i) => {
+    const dots = ASCII_DOTS[i - firstDotRow];
+    return dots ? row + " ".repeat(DOTS_GAP) + dots : row;
+  });
+};
 
 /**
- * clipLines() for a split-up mark: a letter that no longer fits goes away whole
- * rather than half drawn, and the mark closes up against the last letter still
- * on screen, right where the vanished one started.
+ * Cuts the mark down to `capacity` columns. Letters go away whole rather than
+ * half drawn, and the ellipsis closes up against the last letter still on
+ * screen — right where the vanished one began.
  */
 const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
   const total = glyphs.reduce((sum, glyph) => sum + columnsOf(glyph), 0);
   if (capacity <= 0 || total <= capacity) return glyphs;
 
-  const room = Math.max(capacity - CLIP_MARK.length, 0);
+  const room = Math.max(capacity - DOTS_WIDTH - DOTS_GAP, 0);
   const kept: Glyph[] = [];
   let used = 0;
   for (const glyph of glyphs) {
@@ -239,15 +252,16 @@ const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
     kept.push(glyph);
     used += columnsOf(glyph);
   }
-  const mark = CLIP_MARK.slice(0, capacity);
-  if (kept.length === 0) return [mapRows(glyphs[0], () => mark)];
-  return [...kept.slice(0, -1), mapRows(kept[kept.length - 1], (row) => row + mark)];
+  // Not even the first letter fits: the mark is nothing but its own ellipsis.
+  if (kept.length === 0) return [mapRows({ char: "", block: glyphs[0].block }, () => "")].map(withDots);
+  return [...kept.slice(0, -1), withDots(kept[kept.length - 1])];
 };
 
 /**
  * The ASCII wordmark stays on screen at every width — no swapping it out for
- * plain text. It is only cut down, column by column, once it runs into the edge
- * of the window, which for a short mark like KPN never happens.
+ * plain text. It is only cut down, letter by letter, once it runs into the edge
+ * of the window, which for a short mark like KPN never happens. A cut is marked
+ * by the font's own ellipsis, three big dots on the baseline.
  *
  * The art is six rows of box drawing characters, so marking it natively drags
  * through those rows rather than through the letters they draw. Every letter is

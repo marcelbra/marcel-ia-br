@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
+import { ASCII_DOTS } from "@/lib/clip";
 
 const realRect = Element.prototype.getBoundingClientRect;
 
@@ -42,8 +43,8 @@ describe("CvSection at a narrow width", () => {
     expect(marks.every((m) => !m.classList.contains("hidden") && !m.className.includes("md:"))).toBe(true);
 
     const [kpn, newtone] = marks;
-    expect(kpn.textContent).not.toContain("..."); // 26 columns wide — it fits
-    expect(newtone.textContent).toContain("..."); // 64 columns wide — it does not
+    expect(kpn.textContent).not.toContain(ASCII_DOTS[1]); // 26 columns wide — it fits
+    expect(newtone.textContent).toContain(ASCII_DOTS[1]); // 64 columns wide — it does not
     expect(rowsOf(newtone).every((row) => row.length <= 40)).toBe(true);
   });
 });
@@ -53,7 +54,7 @@ const glyphsOf = (mark: Element) => [...mark.querySelectorAll<HTMLElement>("[dat
 /** The art rows, stitched back together out of the per-letter blocks. */
 const rowsOf = (mark: Element) => {
   const blocks = glyphsOf(mark).map((glyph) => glyph.textContent!.split("\n"));
-  return blocks[0].map((_, row) => blocks.map((block) => block[row]).join(""));
+  return blocks[0].map((_, row) => blocks.map((block) => block[row] ?? "").join(""));
 };
 
 describe("CvSection ascii wordmarks", () => {
@@ -93,19 +94,18 @@ describe("CvSection ascii wordmarks", () => {
     );
   });
 
-  it("drops whole letters as the window narrows, with the mark against the last one", () => {
+  it("drops whole letters as the window narrows, the ellipsis closing up behind them", () => {
     stubLayout(200, 5); // 40 characters fit
     const { container } = render(<CvSection />);
     const newtone = [...container.querySelectorAll("pre")][1];
 
-    // N E W T fit in the 37 columns left beside the mark; O N E do not.
-    expect(glyphsOf(newtone).map((glyph) => glyph.dataset.glyph).join("")).toBe("NEWT");
-    // Every letter is drawn at its full width — the last one plus the mark.
-    expect(glyphsOf(newtone).map((glyph) => glyph.textContent!.split("\n")[0].length)).toEqual([10, 8, 10, 12]);
-
-    const rows = rowsOf(newtone);
-    expect(rows.every((row) => row.length === 40)).toBe(true);
-    expect(rows.every((row) => row.endsWith("..."))).toBe(true);
+    // N E W fill the 28 columns left beside the ellipsis; T O N E do not.
+    expect(glyphsOf(newtone).map((glyph) => glyph.dataset.glyph).join("")).toBe("NEW");
+    // No letter is half drawn: N and E keep their own widths, W carries the mark.
+    const blocks = glyphsOf(newtone).map((glyph) => glyph.textContent!.split("\n"));
+    expect(blocks.map((block) => block[0].length)).toEqual([10, 8, 10]);
+    expect(blocks[2].at(-1)).toBe(" ╚══╝╚══╝  " + ASCII_DOTS[1]); // W's own baseline, then the dots
+    expect(rowsOf(newtone).every((row) => row.length <= 40)).toBe(true);
   });
 
   it("leaves the pointer alone — the mark is not a link", () => {
@@ -123,7 +123,7 @@ describe("CvSection at a wide width", () => {
     const { container } = render(<CvSection />);
 
     expect(screen.getByText(/Lead engineer building agent eval capabilities/)).toBeInTheDocument();
-    expect([...container.querySelectorAll("pre")].every((m) => !m.textContent?.includes("..."))).toBe(true);
+    expect([...container.querySelectorAll("pre")].every((m) => !m.textContent?.includes(ASCII_DOTS[1]))).toBe(true);
     expect(container.querySelector("[title]")).toBeNull(); // nothing was cut
   });
 });

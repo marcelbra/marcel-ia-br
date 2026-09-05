@@ -102,6 +102,21 @@ describe("TerminalWindow", () => {
     expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 500 });
   });
 
+  it("measures its own box up front, so zooming has two lengths to animate between", () => {
+    const win = setup();
+    // A width of `auto` cannot be interpolated: without this the window would
+    // snap to its zoomed width in one frame while the rest still animated.
+    expect(win.style.width).toBe(`${NATURAL.w}px`);
+    expect(win.style.height).toBe(`${NATURAL.h}px`);
+
+    // And the zoom moves every edge in the same style change, under a transition.
+    fireEvent.doubleClick(screen.getByText("~/marcel"));
+    expect(win.className).toMatch(/transition-/);
+    expect(win.style.width).toBe(`${VIEW_W}px`);
+    expect(win.style.height).toBe(`${FOOTER_TOP - HEADER_BOTTOM}px`);
+    expect(win.style.transform).toBe(`translate(${-BASE.left}px, ${HEADER_BOTTOM - BASE.top}px)`);
+  });
+
   it("resizes from every side, moving only the edge that was grabbed", () => {
     const win = setup();
     const { left, top, right, bottom } = rect(win);
