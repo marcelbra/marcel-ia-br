@@ -116,3 +116,32 @@
     to { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* The hero sizes itself against the terminal window, not the viewport, so
+   dragging the window's edge and resizing the browser behave identically.
+   Everything below is driven by the container's inline size. */
+@layer components {
+  .hero-scope {
+    container-type: inline-size;
+    container-name: hero;
+  }
+
+  /* The wordmark is 61 monospace characters at ~0.63em each, so it needs
+     38.4x its font size in width. Subtract what the avatar and the gap take
+     (132px) and scale continuously to fill the rest, capped at the design
+     size. Continuous on purpose: no breakpoints, so there is no step to see
+     while dragging. The avatar's slot stays reserved once it is hidden, which
+     keeps this one formula true at every width. */
+  .hero-banner {
+    font-size: clamp(4px, calc(2.6cqw - 3.44px), 10px);
+  }
+
+  /* The avatar never scales. Below the width where it stops earning its place
+     it is simply gone. The row holds the avatar's height either way, so its
+     disappearance costs no vertical shift and everything below stays put. */
+  @container hero (max-width: 300px) {
+    .hero-avatar {
+      display: none;
+    }
+  }
+}
