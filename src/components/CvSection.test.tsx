@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
+import { ASCII_DOTS } from "@/lib/clip";
 
 const realRect = Element.prototype.getBoundingClientRect;
 
@@ -42,8 +43,8 @@ describe("CvSection at a narrow width", () => {
     expect(marks.every((m) => !m.classList.contains("hidden") && !m.className.includes("md:"))).toBe(true);
 
     const [kpn, newtone] = marks;
-    expect(kpn.textContent).not.toContain("..."); // 26 columns wide — it fits
-    expect(newtone.textContent).toContain("..."); // 64 columns wide — it does not
+    expect(kpn.textContent).not.toContain(ASCII_DOTS[1]); // 26 columns wide — it fits
+    expect(newtone.textContent).toContain(ASCII_DOTS[1]); // 64 columns wide — it does not
     expect(newtone.textContent?.split("\n").every((l) => l.length <= 40)).toBe(true);
   });
 });
@@ -54,7 +55,7 @@ describe("CvSection at a wide width", () => {
     const { container } = render(<CvSection />);
 
     expect(screen.getByText(/Lead engineer building agent eval capabilities/)).toBeInTheDocument();
-    expect([...container.querySelectorAll("pre")].every((m) => !m.textContent?.includes("..."))).toBe(true);
+    expect([...container.querySelectorAll("pre")].every((m) => !m.textContent?.includes(ASCII_DOTS[1]))).toBe(true);
     expect(container.querySelector("[title]")).toBeNull(); // nothing was cut
   });
 });

@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useCharCapacity } from "@/hooks/use-char-capacity";
-import { clip, clipLines } from "@/lib/clip";
+import { clip, clipAscii } from "@/lib/clip";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -195,7 +195,8 @@ const ClippedLine = ({ segments }: { segments: Segment[] }) => {
 /**
  * The ASCII wordmark stays on screen at every width — no swapping it out for
  * plain text. It is only cut down, column by column, once it runs into the edge
- * of the window, which for a short mark like KPN never happens.
+ * of the window, which for a short mark like KPN never happens. A cut is marked
+ * by the font's own ellipsis, three big dots on the baseline.
  */
 const AsciiLogo = ({ exp }: { exp: Experience }) => {
   const [ref, capacity] = useCharCapacity<HTMLPreElement>();
@@ -217,7 +218,7 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
         e.clipboardData.setData("text/plain", exp.company);
       }}
     >
-      {clipLines(exp.asciiLogo, capacity)}
+      {clipAscii(exp.asciiLogo, capacity)}
     </pre>
   );
 };
