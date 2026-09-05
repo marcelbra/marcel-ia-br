@@ -222,7 +222,11 @@ const columnsOf = (glyph: Glyph) => glyph.block.split("\n")[0].length;
 const mapRows = (glyph: Glyph, f: (row: string) => string): Glyph =>
   ({ char: glyph.char, block: glyph.block.split("\n").map(f).join("\n") });
 
-/** clipLines() for a split-up mark: the last letter left on screen carries the mark. */
+/**
+ * clipLines() for a split-up mark: a letter that no longer fits goes away whole
+ * rather than half drawn, and the mark closes up against the last letter still
+ * on screen, right where the vanished one started.
+ */
 const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
   const total = glyphs.reduce((sum, glyph) => sum + columnsOf(glyph), 0);
   if (capacity <= 0 || total <= capacity) return glyphs;
@@ -231,10 +235,9 @@ const clipGlyphs = (glyphs: Glyph[], capacity: number): Glyph[] => {
   const kept: Glyph[] = [];
   let used = 0;
   for (const glyph of glyphs) {
-    const take = Math.min(columnsOf(glyph), room - used);
-    if (take <= 0) break;
-    kept.push(mapRows(glyph, (row) => row.slice(0, take)));
-    used += take;
+    if (used + columnsOf(glyph) > room) break;
+    kept.push(glyph);
+    used += columnsOf(glyph);
   }
   const mark = CLIP_MARK.slice(0, capacity);
   if (kept.length === 0) return [mapRows(glyphs[0], () => mark)];

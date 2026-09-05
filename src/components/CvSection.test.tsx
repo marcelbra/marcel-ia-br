@@ -93,6 +93,21 @@ describe("CvSection ascii wordmarks", () => {
     );
   });
 
+  it("drops whole letters as the window narrows, with the mark against the last one", () => {
+    stubLayout(200, 5); // 40 characters fit
+    const { container } = render(<CvSection />);
+    const newtone = [...container.querySelectorAll("pre")][1];
+
+    // N E W T fit in the 37 columns left beside the mark; O N E do not.
+    expect(glyphsOf(newtone).map((glyph) => glyph.dataset.glyph).join("")).toBe("NEWT");
+    // Every letter is drawn at its full width — the last one plus the mark.
+    expect(glyphsOf(newtone).map((glyph) => glyph.textContent!.split("\n")[0].length)).toEqual([10, 8, 10, 12]);
+
+    const rows = rowsOf(newtone);
+    expect(rows.every((row) => row.length === 40)).toBe(true);
+    expect(rows.every((row) => row.endsWith("..."))).toBe(true);
+  });
+
   it("leaves the pointer alone — the mark is not a link", () => {
     stubLayout(1000, 5);
     const { container } = render(<CvSection />);
