@@ -1,4 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useCharCapacity } from "@/hooks/use-char-capacity";
+import { clip, clipLines } from "@/lib/clip";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -155,6 +157,71 @@ const experiences: Experience[] = [
   },
 ];
 
+interface Segment {
+  text: string;
+  className?: string;
+}
+
+/**
+ * One line of terminal text: it never wraps and never grows its box. Whatever
+ * does not fit the current width is cut off and marked with ASCII dots, so the
+ * card keeps the same height at every window size.
+ */
+const ClippedLine = ({ segments }: { segments: Segment[] }) => {
+  const [ref, capacity] = useCharCapacity<HTMLSpanElement>();
+  const full = segments.map((segment) => segment.text).join("");
+  const shown = clip(full, capacity);
+
+  let cursor = 0;
+  return (
+    <span
+      ref={ref}
+      className="min-w-0 flex-1 overflow-hidden whitespace-nowrap"
+      title={shown === full ? undefined : full}
+    >
+      {segments.map((segment, i) => {
+        const part = shown.slice(cursor, cursor + segment.text.length);
+        cursor += segment.text.length;
+        return part ? (
+          <span key={i} className={segment.className}>
+            {part}
+          </span>
+        ) : null;
+      })}
+    </span>
+  );
+};
+
+/**
+ * The ASCII wordmark stays on screen at every width — no swapping it out for
+ * plain text. It is only cut down, column by column, once it runs into the edge
+ * of the window, which for a short mark like KPN never happens.
+ */
+const AsciiLogo = ({ exp }: { exp: Experience }) => {
+  const [ref, capacity] = useCharCapacity<HTMLPreElement>();
+  return (
+    <pre
+      ref={ref}
+      className={`${exp.color} min-w-0 flex-1 overflow-hidden text-[8px] leading-[1.15] tracking-[0.02em] font-bold cursor-pointer`}
+      aria-hidden="true"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        const range = document.createRange();
+        range.selectNodeContents(e.currentTarget);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }}
+      onCopy={(e) => {
+        e.preventDefault();
+        e.clipboardData.setData("text/plain", exp.company);
+      }}
+    >
+      {clipLines(exp.asciiLogo, capacity)}
+    </pre>
+  );
+};
+
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -208,28 +275,8 @@ const CvSection = () => {
         <div key={i} className="h-full flex flex-col justify-center px-6">
           <div className="max-w-3xl mx-auto w-full">
             <div className="flex items-center gap-4 mb-6">
-              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
-              <div>
-                <pre
-                  className={`${exp.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block cursor-pointer`}
-                  aria-hidden="true"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    const range = document.createRange();
-                    range.selectNodeContents(e.currentTarget);
-                    const sel = window.getSelection();
-                    sel?.removeAllRanges();
-                    sel?.addRange(range);
-                  }}
-                  onCopy={(e) => {
-                    e.preventDefault();
-                    e.clipboardData.setData("text/plain", exp.company);
-                  }}
-                >
-                  {exp.asciiLogo}
-                </pre>
-                <span className={`${exp.color} text-2xl font-bold tracking-widest md:hidden`}>{exp.company}</span>
-              </div>
+              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
+              <AsciiLogo exp={exp} />
             </div>
 
             <div className="mt-2 mb-4 text-muted-foreground">
@@ -237,11 +284,11 @@ const CvSection = () => {
             </div>
 
             <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                <h3 className="text-foreground font-medium text-lg">
-                  {exp.title} <span className={exp.color}>@ {exp.company}</span>
+              <div className="flex items-baseline justify-between gap-2 mb-4">
+                <h3 className="flex min-w-0 flex-1 text-foreground font-medium text-lg">
+                  <ClippedLine segments={[{ text: `${exp.title} ` }, { text: `@ ${exp.company}`, className: exp.color }]} />
                 </h3>
-                <span className="text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
+                <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
                   {exp.period}
                 </span>
               </div>
@@ -249,7 +296,7 @@ const CvSection = () => {
                 {exp.bullets.map((bullet, j) => (
                   <li key={j} className="text-[12px] text-muted-foreground flex items-start gap-2">
                     <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
-                    <span>{bullet.text}</span>
+                    <ClippedLine segments={[{ text: bullet.text }]} />
                   </li>
                 ))}
               </ul>
