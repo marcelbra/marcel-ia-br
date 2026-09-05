@@ -30,7 +30,16 @@ const ZOOM_KEY = "terminal-zoom";
 const CLOSED_KEY = "terminal-closed";
 const MIN_W = 320;
 const MIN_H = 160;
-const ZOOM_MS = 200;
+// AppKit animates a window's geometry over NSWindowResizeTime — 0.2s per 150px
+// of change (NSWindow.animationResizeTime:) — so a small hop is quick and a big
+// one takes its time. Same rule here, capped so a full zoom does not drag on a
+// web page: the zoom this page performs works out at 512ms unclamped.
+const ZOOM_MS_PER_PX = 0.2 / 150 * 1000;
+const ZOOM_MS_MIN = 160;
+const ZOOM_MS_MAX = 450;
+// NSAnimationEaseInOut is symmetric; Tailwind's own ease-in-out is not, so the
+// curve is set alongside the duration rather than left to a utility class.
+const EASE = "cubic-bezier(0.42, 0, 0.58, 1)";
 
 type Offset = { x: number; y: number };
 type Size = { w: number; h: number };
@@ -71,6 +80,17 @@ const writeJSON = (key: string, value: unknown) => {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
 
+/** How long the window should take to travel between two boxes. */
+const zoomMs = (from: DOMRect, to: { left: number; top: number; w: number; h: number }) => {
+  const travel = Math.max(
+    Math.abs(to.left - from.left),
+    Math.abs(to.top - from.top),
+    Math.abs(to.w - from.width),
+    Math.abs(to.h - from.height),
+  );
+  return Math.round(clamp(travel * ZOOM_MS_PER_PX, ZOOM_MS_MIN, ZOOM_MS_MAX));
+};
+
 /**
  * The area the window lives in: the full width of the viewport, between the
  * fixed header and the footer. Moving, resizing and zooming all stop here, so
@@ -98,7 +118,9 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const [size, setSize] = useState<Size | null>(() => (wasClosed ? null : readJSON<Size>(SIZE_KEY)));
   // Non-null exactly while the window is zoomed; it holds the geometry to go back to.
   const [restore, setRestore] = useState<Geometry | null>(() => (wasClosed ? null : readJSON<Geometry>(ZOOM_KEY)));
-  const [animating, setAnimating] = useState(false);
+  // Milliseconds while a zoom is running, 0 the rest of the time — the window has
+  // to follow the pointer exactly during a drag or a resize.
+  const [animMs, setAnimMs] = useState(0);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; rangeX: [number, number]; rangeY: [number, number] } | null>(null);
   const resizeRef = useRef<{ dir: Direction; startX: number; startY: number; baseLeft: number; baseTop: number; left: number; top: number; right: number; bottom: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,6 +133,8 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const zoomed = restore !== null;
   const zoomedRef = useRef(zoomed);
   zoomedRef.current = zoomed;
+  const animMsRef = useRef(animMs);
+  animMsRef.current = animMs;
   // Set once the window has been moved, resized or zoomed by hand: until then it
   // keeps following the layout when the viewport changes.
   const touchedRef = useRef(false);
@@ -138,10 +162,10 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
 
   useEffect(() => () => clearTimeout(animTimer.current), []);
 
-  const startAnim = () => {
-    setAnimating(true);
+  const startAnim = (ms: number) => {
+    setAnimMs(ms);
     clearTimeout(animTimer.current);
-    animTimer.current = setTimeout(() => setAnimating(false), ZOOM_MS + 20);
+    animTimer.current = setTimeout(() => setAnimMs(0), ms + 20);
   };
 
   const handleClose = () => {
@@ -153,8 +177,27 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     onClose?.();
   };
 
-  /** Where the window sits before the offset is applied. */
-  const origin = (rect: DOMRect) => ({ left: rect.left - offsetRef.current.x, top: rect.top - offsetRef.current.y });
+  /**
+   * Where the window sits before the offset is applied. Read from the slot it
+   * sits in, which no transform of ours touches — deriving it from the window's
+   * own box would be wrong mid-animation, when that box is still travelling.
+   */
+  const origin = (rect: DOMRect) => {
+    const parent = containerRef.current?.parentElement;
+    if (parent) {
+      const p = parent.getBoundingClientRect();
+      return { left: p.left, top: p.top };
+    }
+    return { left: rect.left - offsetRef.current.x, top: rect.top - offsetRef.current.y };
+  };
+
+  /** Stop a running zoom where it visually is, rather than at its target. */
+  const settle = (rect: DOMRect, base: { left: number; top: number }) => {
+    if (!animMsRef.current) return;
+    setOffset({ x: rect.left - base.left, y: rect.top - base.top });
+    setSize({ w: rect.width, h: rect.height });
+    setAnimMs(0);
+  };
 
   /** Stretch the window across the whole area between header and footer. */
   const fillBounds = useCallback(() => {
@@ -214,14 +257,27 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   }, [fillBounds, fitInBounds, resetToNatural]);
 
   const toggleZoom = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
     touchedRef.current = true;
-    startAnim();
+    const rect = el.getBoundingClientRect();
+    const base = origin(rect);
+
     if (restore) {
+      startAnim(zoomMs(rect, {
+        left: base.left + restore.offset.x,
+        top: base.top + restore.offset.y,
+        w: restore.size?.w ?? rect.width,
+        h: restore.size?.h ?? rect.height,
+      }));
       setOffset(restore.offset);
       setSize(restore.size);
       setRestore(null);
       return;
     }
+
+    const b = bounds();
+    startAnim(zoomMs(rect, { left: b.left, top: b.top, w: b.right - b.left, h: b.bottom - b.top }));
     setRestore({ offset, size });
     fillBounds();
   }, [restore, offset, size, fillBounds]);
@@ -239,6 +295,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     touchedRef.current = true;
     const rect = el.getBoundingClientRect();
     const base = origin(rect);
+    settle(rect, base);
     const b = bounds();
 
     dragRef.current = {
@@ -258,6 +315,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     touchedRef.current = true;
     const rect = el.getBoundingClientRect();
     const base = origin(rect);
+    settle(rect, base);
     resizeRef.current = {
       dir,
       startX: e.clientX,
@@ -272,7 +330,6 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     // Resizing a zoomed window means it is no longer zoomed — it keeps the size
     // it is being given, and the next double-click fills the bounds again.
     setRestore(null);
-    setAnimating(false);
     e.preventDefault();
   }, []);
 
@@ -387,8 +444,8 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       ref={containerRef}
       data-testid="terminal-window"
       data-zoomed={zoomed || undefined}
-      className={`relative flex flex-col h-full overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${zoomed ? 'rounded-none' : 'rounded-xl'} ${animating ? 'transition-[transform,width,height] duration-200 ease-out' : ''}`}
-      style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, width: size?.w, height: size?.h }}
+      className={`relative flex flex-col h-full overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${zoomed ? 'rounded-none' : 'rounded-xl'} ${animMs ? 'transition-[transform,width,height]' : ''}`}
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, width: size?.w, height: size?.h, transitionDuration: animMs ? `${animMs}ms` : undefined, transitionTimingFunction: animMs ? EASE : undefined }}
     >
       {/* Title bar - drag handle, double-click to zoom */}
       <div

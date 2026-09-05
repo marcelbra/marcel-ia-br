@@ -23,6 +23,10 @@ const fixedRect = (el: HTMLElement, r: { left: number; top: number; right: numbe
 const nativeRect = Element.prototype.getBoundingClientRect;
 const layoutTerminal = function (this: Element) {
   const el = this as HTMLElement;
+  // The slot the window sits in — it is where the window reads its origin from.
+  if ((el.firstElementChild as HTMLElement | null)?.dataset?.testid === "terminal-window") {
+    return { left: BASE.left, top: BASE.top, right: BASE.left + NATURAL.w, bottom: BASE.top + NATURAL.h, width: NATURAL.w, height: NATURAL.h, x: BASE.left, y: BASE.top, toJSON: () => ({}) } as DOMRect;
+  }
   if (el.dataset?.testid !== "terminal-window") return nativeRect.call(this);
   const match = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(el.style.transform);
   const left = BASE.left + Number(match?.[1] ?? 0);
@@ -115,6 +119,24 @@ describe("TerminalWindow", () => {
     expect(win.style.width).toBe(`${VIEW_W}px`);
     expect(win.style.height).toBe(`${FOOTER_TOP - HEADER_BOTTOM}px`);
     expect(win.style.transform).toBe(`translate(${-BASE.left}px, ${HEADER_BOTTOM - BASE.top}px)`);
+  });
+
+  it("takes longer for a longer trip, the way AppKit times a window resize", () => {
+    const win = setup();
+    const title = screen.getByText("~/marcel");
+
+    // 0.2s per 150px of the largest edge change: here the height moves furthest,
+    // 400 -> 652, so 252px at 1.333ms/px.
+    fireEvent.doubleClick(title);
+    expect(win.style.transitionDuration).toBe("336ms");
+
+    // A window nudged just off the bounds has barely any distance to cover, and
+    // must not sit through the same animation.
+    dragHandle(win, "se", { x: VIEW_W - 40, y: FOOTER_TOP - 30 });
+    fireEvent.doubleClick(title);
+    const short = parseInt(win.style.transitionDuration, 10);
+    expect(short).toBeLessThan(336);
+    expect(short).toBeGreaterThanOrEqual(160);
   });
 
   it("resizes from every side, moving only the edge that was grabbed", () => {
