@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
 import { ASCII_DOTS } from "@/lib/clip";
@@ -15,6 +15,8 @@ const stubLayout = (width: number, charWidth: number) => {
 };
 
 afterEach(() => {
+  vi.unstubAllGlobals();
+  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   Element.prototype.getBoundingClientRect = realRect;
   delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
 });
@@ -137,5 +139,43 @@ describe("CvSection at a wide width", () => {
     expect(screen.getByText(/Lead engineer building agent eval capabilities/)).toBeInTheDocument();
     expect([...container.querySelectorAll("pre")].every((m) => !m.textContent?.includes(ASCII_DOTS[1]))).toBe(true);
     expect(container.querySelector("[title]")).toBeNull(); // nothing was cut
+  });
+});
+
+describe("the stack of pages", () => {
+  it("keeps each page inside its own box, so the next one cannot bleed in", () => {
+    const { container } = render(<CvSection />);
+    const pages = [...container.firstElementChild!.children];
+
+    expect(pages).toHaveLength(3);
+    // A page clips to its own height: a card too tall for a short window is cut
+    // off at the fold instead of spilling onto the page below.
+    expect(pages.every((page) => page.className.includes("overflow-hidden"))).toBe(true);
+  });
+
+  it("snaps back to the current page when the window is resized", () => {
+    const observed: Array<{ notify: () => void; el: Element }> = [];
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private notify: () => void) {}
+        observe(el: Element) {
+          observed.push({ notify: this.notify, el });
+        }
+        disconnect() {}
+      },
+    );
+
+    const { container } = render(<CvSection />);
+    const stack = container.firstElementChild!;
+    const watcher = observed.find((o) => o.el === stack);
+    expect(watcher).toBeDefined();
+
+    // A resize leaves the stack scrolled to the old page height; the current
+    // page has to be put back on its mark or the next one shows through.
+    watcher!.notify();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
   });
 });

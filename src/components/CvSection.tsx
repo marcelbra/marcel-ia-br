@@ -336,10 +336,25 @@ const CvSection = () => {
     };
   }, [scrollToIndex]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+
+    // The stack is scrolled by pixels, so a resize leaves the current entry off
+    // its mark by however much the page height changed — and the entry next to
+    // it shows through the gap. Snap back to the current page instead.
+    const realign = () => {
+      container.children[currentIndexRef.current]?.scrollIntoView({ block: "start" });
+    };
+    const observer = new ResizeObserver(realign);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
-        <div key={i} className="h-full flex flex-col px-6 py-6">
+        <div key={i} className="h-full flex flex-col overflow-hidden px-6 py-6">
           <div className="max-w-3xl w-full">
             <div className="flex items-center gap-4 mb-6">
               <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
