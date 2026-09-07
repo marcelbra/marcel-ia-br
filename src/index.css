@@ -181,6 +181,28 @@
     min-height: 10.14rem;
   }
 
+  /* A CV role sizes itself against the terminal window too, and for the same
+     reason: dragging the window's edge and resizing the browser behave alike,
+     continuously, with no breakpoint to step over. Both scales run between a
+     320px window — where a phone puts it — and a 560px one, at which the
+     design sizes take over. Small type on a small window is not a nicety
+     here: it is the difference between two of a role's lines fitting under
+     the window's bottom edge and four of them fitting. */
+  .cv-scope {
+    container-type: inline-size;
+    container-name: cv;
+  }
+
+  .cv-role-title {
+    font-size: clamp(1rem, calc(0.833cqw + 13.33px), 1.125rem);
+    line-height: clamp(1.5rem, calc(1.667cqw + 18.67px), 1.75rem);
+  }
+
+  .cv-role-bullet {
+    font-size: clamp(11px, calc(0.417cqw + 9.67px), 12px);
+    line-height: clamp(1rem, calc(1.833cqw + 10.13px), 1.275rem);
+  }
+
   /* The avatar never scales. Below the width where it stops earning its place
      it is simply gone. */
   @container hero (max-width: 300px) {

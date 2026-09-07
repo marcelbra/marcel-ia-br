@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
 
 const realRect = Element.prototype.getBoundingClientRect;
@@ -59,7 +59,7 @@ afterEach(() => {
   delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   Element.prototype.getBoundingClientRect = realRect;
   for (const box of ["clientWidth", "clientHeight", "scrollWidth"]) {
-    delete (HTMLElement.prototype as Record<string, unknown>)[box];
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>)[box];
   }
 });
 
@@ -156,6 +156,33 @@ describe("CvSection in a short window", () => {
     expect(container.querySelector("ul")!.style.height).toBe("60px");
   });
 
+  it("says how many bullets it is holding back, and hands them over when asked", () => {
+    stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 }); // three of five fit
+    const { container } = render(<CvSection />);
+
+    const [more] = screen.getAllByRole("button", { name: /\+2 more/ });
+    fireEvent.click(more);
+
+    // The role is on its own now, with no page above it to fit into and every
+    // bullet in place...
+    expect(container.querySelector("[data-fit-boundary]")).toBeNull();
+    const lists = container.querySelectorAll("ul");
+    expect(lists).toHaveLength(1);
+    expect([...lists[0].children].some((item) => item.className.includes("invisible"))).toBe(false);
+    expect(lists[0].style.height).toBe("");
+
+    // ...and a way back to the stack it came out of.
+    fireEvent.click(screen.getByRole("button", { name: "← back" }));
+    expect(container.querySelectorAll("ul")).toHaveLength(3);
+  });
+
+  it("says nothing about more while every bullet is showing", () => {
+    stubLayout(1000, 5, { height: 300, chrome: 100, itemHeight: 20 });
+    render(<CvSection />);
+
+    expect(screen.queryByRole("button", { name: /more/ })).toBeNull();
+  });
+
   it("keeps every bullet, and the card its natural height, while there is room", () => {
     stubLayout(1000, 5, { height: 300, chrome: 100, itemHeight: 20 });
     const { container } = render(<CvSection />);
@@ -178,6 +205,22 @@ describe("CvSection in a short window", () => {
     expect(block.className).not.toContain("shrink-0");
     expect(card.className).toContain("min-h-0");
     expect(card.querySelector("ul")!.className).toContain("min-h-0");
+  });
+});
+
+describe("how a role is sized", () => {
+  it("scales with the terminal window rather than with a breakpoint", () => {
+    const { container } = render(<CvSection />);
+
+    for (const page of container.firstElementChild!.children) {
+      expect(page.className).toContain("cv-scope");
+    }
+    expect(container.querySelector("h3")!.className).toContain("cv-role-title");
+    expect(container.querySelector("li")!.className).toContain("cv-role-bullet");
+    // Dragging the window's edge has to move the type as much as resizing the
+    // browser does, so nothing here may hang off a viewport breakpoint.
+    const sized = [...container.querySelectorAll("h3, li")];
+    expect(sized.every((el) => !/\b(sm|md|lg|xl):/.test(el.className))).toBe(true);
   });
 });
 
