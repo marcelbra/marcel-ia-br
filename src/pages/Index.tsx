@@ -102,7 +102,7 @@ const Index = () => {
   };
 
   return (
-    <div className={`bg-background flex flex-col ${expanded ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
+    <div className={`bg-background flex flex-col ${expanded ? 'min-h-screen' : 'h-viewport overflow-hidden'}`}>
       <Header activeSection={activeSection} onNavigate={navigateToSection} disabled={terminalClosed} />
       <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-20 min-h-0 [@media(max-height:640px)]:pt-16 [@media(max-height:640px)]:pb-8 [@media(max-height:480px)]:pt-14 [@media(max-height:480px)]:pb-4">
         <div className="w-full max-w-4xl h-full">
