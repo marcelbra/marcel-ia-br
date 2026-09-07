@@ -473,7 +473,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       ref={containerRef}
       data-testid="terminal-window"
       data-zoomed={zoomed || undefined}
-      className={`relative flex flex-col h-full overflow-hidden border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${zoomed ? 'rounded-none' : 'rounded-xl'} ${animMs ? 'transition-[transform,width,height]' : ''}`}
+      className={`relative flex flex-col h-full overflow-hidden rounded-xl border border-border shadow-[0_8px_32px_-8px_hsl(var(--foreground)/0.15)] animate-scale-in ${animMs ? 'transition-[transform,width,height]' : ''}`}
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)`, width: size?.w, height: size?.h, transitionDuration: animMs ? `${animMs}ms` : undefined, transitionTimingFunction: animMs ? EASE : undefined }}
     >
       {/* Title bar - drag handle, double-click to zoom */}
