@@ -8,6 +8,23 @@ const HOLD_MS = 5000;
 
 const avatar = () => screen.getAllByAltText("Marcel Braasch pixel avatar")[0] as HTMLImageElement;
 
+describe("Hero banner row", () => {
+  it("reserves the avatar's height through the class that can give it back", () => {
+    render(<Hero />);
+    const row = avatar().closest(".hero-banner-row");
+
+    // jsdom evaluates neither container nor pointer queries, so this guards
+    // the wiring rather than the result: the row's height has to come from a
+    // class those queries can reach (see .hero-banner-row in index.css), not
+    // from a min-h-* utility, which sits in a later layer and would win over
+    // them. The row holds the avatar's height so the wordmark can scale
+    // underneath without shifting anything — except where the avatar is gone
+    // and there is no window edge to drag, and the slot is 90px of nothing.
+    expect(row).not.toBeNull();
+    expect(row!.className).not.toMatch(/\bmin-h-/);
+  });
+});
+
 describe("Hero avatar", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
