@@ -129,8 +129,9 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   // — no move, no resize, no interrupting a running zoom — until it has.
   const pendingRef = useRef<{ dir: Direction | null; startX: number; startY: number } | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; rangeX: [number, number]; rangeY: [number, number] } | null>(null);
-  const resizeRef = useRef<{ dir: Direction; startX: number; startY: number; baseLeft: number; baseTop: number; left: number; top: number; right: number; bottom: number } | null>(null);
+  const resizeRef = useRef<{ dir: Direction; startX: number; startY: number; baseLeft: number; baseTop: number; left: number; top: number; right: number; bottom: number; anchorBottom: boolean; gap: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const animTimer = useRef<ReturnType<typeof setTimeout>>();
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
@@ -252,6 +253,23 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     if (zoomedRef.current) fillBounds(); else fitInBounds();
   }, [booting, fillBounds, fitInBounds]);
 
+  /**
+   * Hold the content against the edge that is not being dragged. Pulling the
+   * bottom edge up leaves the top where it is, so the content stays at the top
+   * and loses its tail — the browser does that by itself. Pulling the top edge
+   * down has to be the mirror image, and that takes a scroll: the box slides
+   * down over content that would otherwise stay where it was, dropping the last
+   * lines out of the bottom. Scrolling by what the box just lost keeps the end
+   * of the content in view and takes the cut off the top instead.
+   */
+  useLayoutEffect(() => {
+    const r = resizeRef.current;
+    const body = bodyRef.current;
+    if (!r || !body) return;
+    const max = Math.max(0, body.scrollHeight - body.clientHeight);
+    body.scrollTop = clamp(r.anchorBottom ? max - r.gap : r.gap, 0, max);
+  }, [size]);
+
   // The bounds move with the viewport, so the window has to follow them.
   useEffect(() => {
     const follow = () => {
@@ -323,6 +341,11 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     settle(rect, base);
 
     if (dir) {
+      // Which edge stays put decides which end of the content stays put with
+      // it, and how far the content already sits from that end is what the
+      // resize has to preserve.
+      const body = bodyRef.current;
+      const anchorBottom = dir.includes("n");
       resizeRef.current = {
         dir,
         startX,
@@ -333,6 +356,8 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         top: rect.top,
         right: rect.right,
         bottom: rect.bottom,
+        anchorBottom,
+        gap: !body ? 0 : anchorBottom ? Math.max(0, body.scrollHeight - body.clientHeight - body.scrollTop) : body.scrollTop,
       };
       // Resizing a zoomed window means it is no longer zoomed — it keeps the
       // size it is given, and the next double-click fills the bounds again.
@@ -507,7 +532,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         </span>
       </div>
       {/* Terminal body */}
-      <div className="flex-1 flex flex-col bg-background overflow-hidden">
+      <div ref={bodyRef} data-testid="terminal-body" className="flex-1 bg-background overflow-y-auto">
         {children}
       </div>
       {/* Resize handles */}
