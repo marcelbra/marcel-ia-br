@@ -399,7 +399,7 @@ const CvSection = () => {
     const exp = experiences[openRole];
     return (
       <div ref={openRef} className="cv-scope h-full overflow-y-auto px-6 py-6">
-        <div className="max-w-3xl w-full mx-auto">
+        <div className="max-w-3xl w-full">
           <button
             onClick={() => setOpenRole(null)}
             className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
@@ -417,7 +417,7 @@ const CvSection = () => {
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
         <div key={i} {...{ [FIT_BOUNDARY]: true }} className="cv-scope h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
+          <div className="max-w-3xl w-full min-h-0 flex flex-col">
             <RoleIntro exp={exp} />
             <RoleCard exp={exp} onOpen={() => setOpenRole(i)} />
           </div>

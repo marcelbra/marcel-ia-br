@@ -44,7 +44,7 @@ const Index = () => {
       if (activeSection === "marcel") {
       return (
         <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
-          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'shrink-0'}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
@@ -70,7 +70,7 @@ const Index = () => {
     if (activeSection === "writing") {
       return (
         <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
-          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'shrink-0'}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
