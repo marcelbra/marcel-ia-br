@@ -136,6 +136,16 @@ describe("TerminalWindow", () => {
     expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 500 });
   });
 
+  it("keeps a scroll of its body to itself", () => {
+    const win = setup();
+    // jsdom does not scroll, so this guards the contract rather than the
+    // behaviour: a drag that runs past the end of the terminal's content must
+    // stop there instead of carrying on into the page behind it, which on a
+    // phone drags the whole site around under your thumb.
+    expect(screen.getByTestId("terminal-body")).toHaveClass("overflow-y-auto", "overscroll-contain");
+    expect(win).toContainElement(screen.getByTestId("terminal-body"));
+  });
+
   it("keeps its rounded corners when it fills the space between header and footer", () => {
     const win = setup();
     const title = screen.getByText("~/marcel");

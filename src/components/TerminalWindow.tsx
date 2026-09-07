@@ -532,7 +532,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         </span>
       </div>
       {/* Terminal body */}
-      <div ref={bodyRef} data-testid="terminal-body" className="flex-1 bg-background overflow-y-auto">
+      <div ref={bodyRef} data-testid="terminal-body" className="flex-1 bg-background overflow-y-auto overscroll-contain">
         {children}
       </div>
       {/* Resize handles */}

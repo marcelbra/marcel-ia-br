@@ -63,6 +63,14 @@
     @apply border-border;
   }
 
+  html, body {
+    /* A drag that runs past the end of a scroll container must not carry on
+       into the page behind it. Without this, scrolling the terminal on a
+       phone bounces the whole site once the terminal has nothing left to
+       give — which reads as the page coming loose. */
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-mono);
@@ -81,6 +89,25 @@
 }
 
 @layer utilities {
+  /* The height of a page that does not scroll. 100vh on a phone is the height
+     the viewport has once the URL bar has scrolled away, so a shell sized in
+     it is taller than what you can actually see: the page has somewhere to
+     scroll to, and the bar collapses and expands under your thumb while you
+     mean to be scrolling the terminal. svh is the height with the bar
+     showing, and it never changes, so the shell always fits and nothing
+     moves. vh stays as the fallback for browsers without svh. */
+  .h-viewport {
+    height: 100vh;
+  }
+
+  /* Written out rather than as two height declarations in a row: the minifier
+     drops the first of those as dead, and the fallback with it. */
+  @supports (height: 100svh) {
+    .h-viewport {
+      height: 100svh;
+    }
+  }
+
   .text-ansi-red { color: hsl(var(--ansi-red)); }
   .text-ansi-green { color: hsl(var(--ansi-green)); }
   .text-ansi-yellow { color: hsl(var(--ansi-yellow)); }
