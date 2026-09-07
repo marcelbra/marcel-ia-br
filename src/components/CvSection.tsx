@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useFitFontSize } from "@/hooks/use-fit-font-size";
 import { FIT_BOUNDARY, useFittingList } from "@/hooks/use-fitting-list";
 import { splitLetters } from "@/lib/ascii";
@@ -258,19 +258,39 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
   );
 };
 
+/** The logo and the command line that introduce a role. */
+const RoleIntro = ({ exp }: { exp: Experience }) => (
+  <>
+    <div className="flex items-center gap-4 mb-6 shrink-0">
+      <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
+      <AsciiLogo exp={exp} />
+    </div>
+
+    <div className="mb-4 shrink-0 text-muted-foreground">
+      <span className={exp.color}>$</span> {exp.command ?? "cat role.txt"}
+    </div>
+  </>
+);
+
 /**
  * One role. Its text wraps like text anywhere else on the page, and the card
  * gives way to the window rather than growing out of it: the border always
  * closes above the bottom edge of the terminal, right under the last bullet
- * that fits. The ones past it go whole rather than being cut off mid-line.
+ * that fits. The ones past it go whole rather than being cut off mid-line —
+ * and `onOpen` is how a reader gets to them: the card says how many it is
+ * holding back and opens the role in full when asked.
+ *
+ * Away from a page of the stack there is no boundary above it, and the card
+ * then simply shows everything it has.
  */
-const RoleCard = ({ exp }: { exp: Experience }) => {
+const RoleCard = ({ exp, onOpen }: { exp: Experience; onOpen?: () => void }) => {
   const [listRef, visible, listHeight] = useFittingList<HTMLUListElement>(exp.bullets.length);
+  const held = exp.bullets.length - visible;
 
   return (
     <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 shrink-0">
-        <h3 className="text-foreground font-medium text-lg">
+        <h3 className="cv-role-title text-foreground font-medium">
           {exp.title} <span className={exp.color}>@ {exp.company}</span>
         </h3>
         <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
@@ -281,13 +301,21 @@ const RoleCard = ({ exp }: { exp: Experience }) => {
         {exp.bullets.map((bullet, j) => (
           <li
             key={j}
-            className={`text-[12px] text-muted-foreground flex items-start gap-2 ${j < visible ? "" : "invisible"}`}
+            className={`cv-role-bullet text-muted-foreground flex items-start gap-2 ${j < visible ? "" : "invisible"}`}
           >
             <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
             <span className="min-w-0 flex-1">{bullet.text}</span>
           </li>
         ))}
       </ul>
+      {held > 0 && onOpen && (
+        <button
+          onClick={onOpen}
+          className={`cv-role-bullet shrink-0 self-start pt-3 ${exp.color} hover:underline underline-offset-2`}
+        >
+          › +{held} more
+        </button>
+      )}
     </div>
   );
 };
@@ -295,8 +323,18 @@ const RoleCard = ({ exp }: { exp: Experience }) => {
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Set to the role being read in full, on its own, outside the stack.
+  const [openRole, setOpenRole] = useState<number | null>(null);
+  const openRef = useRef<HTMLDivElement>(null);
   const currentIndexRef = useRef(0);
   const lockedUntilRef = useRef(0);
+
+  // A role opens at its beginning. The stack it came out of scrolls smoothly,
+  // and a scroll still running when the role opens would otherwise carry it
+  // straight past the first lines.
+  useLayoutEffect(() => {
+    if (openRole !== null && openRef.current) openRef.current.scrollTop = 0;
+  }, [openRole]);
 
   const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
@@ -337,7 +375,7 @@ const CvSection = () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [scrollToIndex]);
+  }, [scrollToIndex, openRole]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -349,26 +387,39 @@ const CvSection = () => {
     const realign = () => {
       container.children[currentIndexRef.current]?.scrollIntoView({ block: "start" });
     };
+    // Coming back from an opened role is the same problem: the stack is at the
+    // top again and the entry that was being read is somewhere below it.
+    if (currentIndexRef.current > 0) realign();
     const observer = new ResizeObserver(realign);
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [openRole]);
+
+  if (openRole !== null) {
+    const exp = experiences[openRole];
+    return (
+      <div ref={openRef} className="cv-scope h-full overflow-y-auto px-6 py-6">
+        <div className="max-w-3xl w-full">
+          <button
+            onClick={() => setOpenRole(null)}
+            className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+          >
+            ← back
+          </button>
+          <RoleIntro exp={exp} />
+          <RoleCard exp={exp} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
-        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="h-full flex flex-col overflow-hidden px-6 py-6">
+        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="cv-scope h-full flex flex-col overflow-hidden px-6 py-6">
           <div className="max-w-3xl w-full min-h-0 flex flex-col">
-            <div className="flex items-center gap-4 mb-6 shrink-0">
-              <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
-              <AsciiLogo exp={exp} />
-            </div>
-
-            <div className="mb-4 shrink-0 text-muted-foreground">
-              <span className={exp.color}>$</span> {exp.command ?? "cat role.txt"}
-            </div>
-
-            <RoleCard exp={exp} />
+            <RoleIntro exp={exp} />
+            <RoleCard exp={exp} onOpen={() => setOpenRole(i)} />
           </div>
         </div>
       ))}
