@@ -166,18 +166,39 @@
      38.4x its font size in width. Subtract what the avatar and the gap take
      (132px) and scale continuously to fill the rest, capped at the design
      size. Continuous on purpose: no breakpoints, so there is no step to see
-     while dragging. The avatar's slot stays reserved once it is hidden, which
-     keeps this one formula true at every width. */
+     while dragging. The avatar's slot is held open once it is hidden, wherever
+     there is an edge to drag, which keeps this one formula true at every
+     width — see .hero-banner-row. */
   .hero-banner {
     font-size: clamp(4px, calc(2.6cqw - 3.44px), 10px);
   }
 
+  /* The row keeps the avatar's height whether or not the avatar is in it, so
+     that crossing the width where the avatar goes costs no vertical shift and
+     everything below stays put. That is a promise to whoever is dragging the
+     window's edge. */
+  .hero-banner-row {
+    min-height: 10.14rem;
+  }
+
   /* The avatar never scales. Below the width where it stops earning its place
-     it is simply gone. The row holds the avatar's height either way, so its
-     disappearance costs no vertical shift and everything below stays put. */
+     it is simply gone. */
   @container hero (max-width: 300px) {
     .hero-avatar {
       display: none;
+    }
+
+    /* And the empty slot it leaves behind is around 90px of nothing, which on
+       a phone is the difference between the section fitting on the screen and
+       the page having to scroll. There is no window edge to drag here, so the
+       promise above has nobody to keep — let the row close. Keyed on the
+       pointer rather than on a width because it is the dragging it is about,
+       and nested in the container query because the slot is only empty once
+       the avatar has actually gone. */
+    @media (pointer: coarse) {
+      .hero-banner-row {
+        min-height: 0;
+      }
     }
   }
 }

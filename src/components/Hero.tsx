@@ -198,9 +198,10 @@ const Hero = () => {
         {/* Sized against the terminal window via container queries (see .hero-scope
             in index.css), so dragging the window's edge and resizing the browser do
             the same thing. The banner scales continuously; the avatar holds one size
-            and disappears outright rather than shrinking. The negative margin offsets
-            the ~15% transparent padding under the feet, keeping them on the baseline. */}
-        <div className="mb-8 flex items-end gap-6 min-h-[10.14rem]" aria-hidden="true">
+            and disappears outright rather than shrinking, taking the row's reserved
+            height with it (.hero-banner-row). The negative margin offsets the ~15%
+            transparent padding under the feet, keeping them on the baseline. */}
+        <div className="hero-banner-row mb-8 flex items-end gap-6" aria-hidden="true">
           <pre
             ref={welcomeRef}
             onMouseEnter={handleWelcomeEnter}
