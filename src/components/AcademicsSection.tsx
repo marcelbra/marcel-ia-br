@@ -14,7 +14,6 @@ interface Bullet {
 }
 
 interface Education {
-  asciiLogo: string;
   logo: string;
   title: string;
   institution: string;
@@ -33,7 +32,6 @@ interface Education {
 
 const entries: Education[] = [
   {
-    asciiLogo: "",
     logo: ethLogo,
     title: "Master's Thesis at ETH AI Center",
     institution: "ETH Zurich",
@@ -50,7 +48,6 @@ const entries: Education[] = [
     ],
   },
   {
-    asciiLogo: "",
     logo: tumLogo,
     title: "M.Sc. Data Engineering and Analytics",
     institution: "TU Munich",
@@ -70,7 +67,6 @@ const entries: Education[] = [
     ],
   },
   {
-    asciiLogo: "",
     logo: lmuLogo,
     title: "M.Sc. Computational Linguistics",
     institution: "LMU Munich",
@@ -88,7 +84,6 @@ const entries: Education[] = [
     ],
   },
   {
-    asciiLogo: "",
     logo: goetheLogo,
     title: "B.Sc. Computer Science",
     institution: "Goethe University Frankfurt",
@@ -173,16 +168,8 @@ const AcademicsSection = () => {
       {entries.map((entry, i) => (
         <div key={i} className="h-full flex flex-col overflow-hidden px-6 py-6">
           <div className="max-w-3xl w-full m-auto shrink-0">
-            <div className={`flex items-center ${entry.logoImage ? 'gap-10' : 'gap-4'} mb-6`}>
+            <div className="flex items-center mb-6">
               <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
-              <div>
-                {entry.asciiLogo ? (
-                  <pre className={`${entry.color} text-[8px] leading-[1.15] tracking-[0.02em] font-bold hidden md:block`} aria-hidden="true">
-                    {entry.asciiLogo}
-                  </pre>
-                ) : null}
-                <span className={`${entry.color} text-2xl font-bold tracking-widest md:hidden`}>{entry.institution}</span>
-              </div>
             </div>
 
             <div className="mt-2 mb-4 text-muted-foreground">

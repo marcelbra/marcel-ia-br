@@ -44,3 +44,16 @@ describe("the stack of pages", () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
   });
 });
+
+describe("the logo above each card", () => {
+  it("stands on its own, so no wordmark shows up beside it on a phone", () => {
+    const { container } = render(<AcademicsSection />);
+    const rows = [...container.querySelectorAll("img")].map((img) => img.parentElement!);
+
+    expect(rows).toHaveLength(4);
+    // The institution used to be spelled out next to the logo and hidden from
+    // md up — which left "Goethe University Frankfurt" printed beside the very
+    // logo that says it, on exactly the narrow screens that have no room.
+    expect(rows.every((row) => row.textContent === "")).toBe(true);
+  });
+});
