@@ -1,16 +1,56 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import CvSection from "./CvSection";
-import { ASCII_DOTS } from "@/lib/clip";
 
 const realRect = Element.prototype.getBoundingClientRect;
 
+const rect = (props: Partial<DOMRect>): DOMRect =>
+  ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}), ...props }) as DOMRect;
+
+interface Page {
+  /** The height of one page of the stack, of what sits beside the bullet list
+   *  on it, and of a single bullet. */
+  height: number;
+  chrome: number;
+  itemHeight: number;
+}
+
+/** How many columns of art a wordmark holds, across all its letter blocks. */
+const columnsOf = (mark: Element) =>
+  [...mark.children].reduce((sum, letter) => sum + (letter.textContent?.split("\n")[0].length ?? 0), 0);
+
 /** jsdom does no layout: pretend every box is `width` px on a `charWidth` grid. */
-const stubLayout = (width: number, charWidth: number) => {
+const stubLayout = (width: number, charWidth: number, page?: Page) => {
   Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, value: width });
+  // A wordmark measures itself at the hook's reference size of 10px.
+  Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.tagName === "PRE" ? columnsOf(this) * charWidth : 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return page && this.hasAttribute("data-fit-boundary") ? page.height : 0;
+    },
+  });
+
   Element.prototype.getBoundingClientRect = function (this: Element) {
+    // The list is squeezed into whatever the page has left over for it, and the
+    // bullets keep their own places inside it however little that is.
+    const room = page ? Math.max(0, page.height - page.chrome) : 0;
+    if (page && this.tagName === "UL") return rect({ width, height: room, bottom: room });
+    if (page && this.tagName === "LI") {
+      const index = [...(this.parentElement?.children ?? [])].indexOf(this);
+      const top = index * page.itemHeight;
+      return rect({ width, top, height: page.itemHeight, bottom: top + page.itemHeight });
+    }
+    if (page && this.parentElement?.hasAttribute("data-fit-boundary")) {
+      return rect({ width, height: page.chrome + room, bottom: page.chrome + room });
+    }
     const w = charWidth * (this.textContent?.length ?? 0);
-    return { x: 0, y: 0, top: 0, left: 0, right: w, bottom: 0, width: w, height: 0, toJSON: () => ({}) } as DOMRect;
+    return rect({ right: w, width: w });
   };
 };
 
@@ -18,7 +58,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
   delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   Element.prototype.getBoundingClientRect = realRect;
-  delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
+  for (const box of ["clientWidth", "clientHeight", "scrollWidth"]) {
+    delete (HTMLElement.prototype as Record<string, unknown>)[box];
+  }
 });
 
 const lettersOf = (mark: Element) => [...mark.querySelectorAll<HTMLElement>("[data-letter]")];
@@ -29,51 +71,113 @@ const rowsOf = (mark: Element) => {
   return blocks[0].map((_, row) => blocks.map((block) => block[row] ?? "").join(""));
 };
 
+const fontSizeOf = (mark: Element) => parseFloat((mark as HTMLElement).style.fontSize);
+
 describe("CvSection at a narrow width", () => {
-  it("cuts bullet text with ascii dots instead of wrapping it onto a second line", () => {
-    stubLayout(200, 5); // 40 characters fit
+  it("wraps a bullet onto the next line instead of cutting it with dots", () => {
+    stubLayout(200, 5); // 40 characters fit on a line
     const { container } = render(<CvSection />);
 
-    const line = screen.getByTitle(/^Stack: Python \(Semantic Kernel/);
-    expect(line.textContent).toHaveLength(40);
-    expect(line.textContent?.endsWith("...")).toBe(true);
-    // The full text stays available as the tooltip.
-    expect(line.getAttribute("title")).toContain("ElevenLabs");
-    expect(line.className).toContain("whitespace-nowrap");
-    expect(container.querySelector(".flex-wrap")).toBeNull();
+    // The tail of the longest bullet is text on the page, not a tooltip.
+    expect(screen.getByText(/^Stack: Python \(Semantic Kernel.*ElevenLabs$/)).toBeInTheDocument();
+    expect(container.querySelector(".whitespace-nowrap")).toBeNull();
+    expect(container.querySelector("[title]")).toBeNull();
+    expect(container.textContent).not.toContain("...");
   });
 
-  it("keeps every ascii wordmark on screen, cutting the wide ones down", () => {
-    stubLayout(200, 5); // 40 characters fit
+  it("wraps the role title too, rather than cutting the company off it", () => {
+    stubLayout(200, 5);
+    const { container } = render(<CvSection />);
+
+    const [role] = container.querySelectorAll("h3");
+    expect(role.textContent).toBe("Machine Learning Engineer @ Royal KPN N.V.");
+    // The period sits beside the title while there is room and drops below it
+    // when there is not — the same header as an academics entry.
+    expect(role.parentElement!.className).toContain("flex-wrap");
+  });
+
+  it("sets the ascii wordmark smaller instead of dropping letters from it", () => {
+    stubLayout(200, 5); // 40 characters fit at the reference size
     const { container } = render(<CvSection />);
 
     const marks = [...container.querySelectorAll("pre")];
     expect(marks).toHaveLength(3);
     // No breakpoint may hide or swap out the wordmark.
     expect(marks.every((m) => !m.classList.contains("hidden") && !m.className.includes("md:"))).toBe(true);
+    // Every mark is still spelled out in full, however narrow the window is.
+    expect(marks.map((m) => lettersOf(m).map((l) => l.dataset.letter).join(""))).toEqual([
+      "KPN",
+      "NEWTONE",
+      "ERANEOS",
+    ]);
 
     const [kpn, newtone] = marks;
-    expect(kpn.textContent).not.toContain(ASCII_DOTS[1]); // 26 columns wide — it fits
-    expect(newtone.textContent).toContain(ASCII_DOTS[1]); // 64 columns wide — it does not
-    expect(rowsOf(newtone).every((row) => row.length <= 40)).toBe(true);
+    expect(fontSizeOf(kpn)).toBe(8); // 26 columns wide — it fits at full size
+    expect(fontSizeOf(newtone)).toBeCloseTo(6.25); // 64 columns wide — it does not
   });
 
-  it("drops whole letters and puts the dots where the last one went", () => {
-    stubLayout(1000, 5);
-    const { container: roomy } = render(<CvSection />);
-    const full = rowsOf([...roomy.querySelectorAll("pre")][1]);
-    cleanup();
-
-    stubLayout(200, 5); // 40 characters fit
+  it("never sets a wordmark wider than the box it sits in", () => {
+    stubLayout(200, 5); // one character is half the font size wide
     const { container } = render(<CvSection />);
-    const cut = rowsOf([...container.querySelectorAll("pre")][1]);
 
-    // NEWTONE's letters are 10, 8, 10 and 9 columns wide: N, E and W fit next
-    // to the 12-column ellipsis, T does not.
-    const kept = 28;
-    expect(cut[0]).toBe(full[0].slice(0, kept));
-    expect(cut[5]).toBe(`${full[5].slice(0, kept)} ${ASCII_DOTS[1]}`);
-    expect(cut.every((line) => line.length <= 40)).toBe(true);
+    for (const mark of container.querySelectorAll("pre")) {
+      const columns = Math.max(...rowsOf(mark).map((row) => row.length));
+      expect(columns * fontSizeOf(mark) * 0.5).toBeLessThanOrEqual(200);
+    }
+  });
+});
+
+describe("CvSection in a short window", () => {
+  it("drops the bullets that no longer fit, whole ones at a time", () => {
+    // 70px left for the list, 20px to a bullet: three of five fit.
+    stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 });
+    const { container } = render(<CvSection />);
+
+    const [list] = container.querySelectorAll("ul");
+    const items = [...list.children];
+    expect(items).toHaveLength(5);
+    expect(items.map((item) => item.className.includes("invisible"))).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
+    // Dropped, not reflowed: what fits keeps its place, so the count is stable.
+    expect(list.className).toContain("overflow-hidden");
+  });
+
+  it("ends the card under the last bullet it kept, not in dead space", () => {
+    stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 });
+    const { container } = render(<CvSection />);
+
+    // Three bullets of 20px: the list is cut to them, so the border closes
+    // right below the third rather than around the two that went.
+    expect(container.querySelector("ul")!.style.height).toBe("60px");
+  });
+
+  it("keeps every bullet, and the card its natural height, while there is room", () => {
+    stubLayout(1000, 5, { height: 300, chrome: 100, itemHeight: 20 });
+    const { container } = render(<CvSection />);
+
+    const [list] = container.querySelectorAll("ul");
+    expect([...list.children].some((item) => item.className.includes("invisible"))).toBe(false);
+    expect(list.style.height).toBe("");
+  });
+
+  it("lets the card give way so its border stays inside the window", () => {
+    const { container } = render(<CvSection />);
+    const [page] = container.firstElementChild!.children;
+    const block = page.firstElementChild!;
+    const card = block.lastElementChild!;
+
+    // Bottom padding on the page is the gap the card keeps to the window edge;
+    // the chain of min-h-0 is what makes the card yield that gap.
+    expect(page.className).toContain("py-6");
+    expect(block.className).toContain("min-h-0");
+    expect(block.className).not.toContain("shrink-0");
+    expect(card.className).toContain("min-h-0");
+    expect(card.querySelector("ul")!.className).toContain("min-h-0");
   });
 });
 
@@ -113,15 +217,6 @@ describe("CvSection ascii wordmarks", () => {
     );
   });
 
-  it("keeps a letter and its element in step once the mark is cut", () => {
-    stubLayout(200, 5); // 40 characters fit
-    const { container } = render(<CvSection />);
-    const newtone = [...container.querySelectorAll("pre")][1];
-
-    // N E W fill the 28 columns left beside the ellipsis; T O N E do not.
-    expect(lettersOf(newtone).map((letter) => letter.dataset.letter).join("")).toBe("NEW");
-  });
-
   it("leaves the pointer alone — the mark is not a link", () => {
     stubLayout(1000, 5);
     const { container } = render(<CvSection />);
@@ -132,13 +227,12 @@ describe("CvSection ascii wordmarks", () => {
 });
 
 describe("CvSection at a wide width", () => {
-  it("shows the wordmarks and the bullets in full", () => {
+  it("shows the wordmarks at full size and the bullets in full", () => {
     stubLayout(1000, 5); // 200 characters fit
     const { container } = render(<CvSection />);
 
     expect(screen.getByText(/Lead engineer building agent eval capabilities/)).toBeInTheDocument();
-    expect([...container.querySelectorAll("pre")].every((m) => !m.textContent?.includes(ASCII_DOTS[1]))).toBe(true);
-    expect(container.querySelector("[title]")).toBeNull(); // nothing was cut
+    expect([...container.querySelectorAll("pre")].every((m) => fontSizeOf(m) === 8)).toBe(true);
   });
 });
 
