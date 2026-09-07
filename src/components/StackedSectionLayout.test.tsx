@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import CvSection from "./CvSection";
 import AcademicsSection from "./AcademicsSection";
+import Index from "@/pages/Index";
 
 // jsdom cannot measure layout. Guard the flex sizing contract here; verify
 // actual centering and resize/page isolation in a real browser as well.
@@ -18,5 +20,25 @@ describe.each([
       // justify-center, this never pushes the beginning above the page edge.
       expect(content).toHaveClass("m-auto", "shrink-0", "w-full", "max-w-3xl");
     }
+  });
+});
+
+// Marcel and writing live inside the terminal body rather than in a stack of
+// pages, but a window pulled wider or zoomed open has to treat them the same:
+// the content sits in the middle of the space it was given, not in its corner.
+describe.each(["marcel", "writing"] as const)("the %s section", (name) => {
+  // The terminal remembers its geometry across renders; each case starts fresh.
+  beforeEach(() => sessionStorage.clear());
+
+  it("centers its content in the terminal, the way the stacked pages do", () => {
+    const { getByTestId, getByRole } = render(
+      <MemoryRouter>
+        <Index />
+      </MemoryRouter>,
+    );
+    if (name === "writing") fireEvent.click(getByRole("button", { name: /writing/i }));
+
+    const content = getByTestId("terminal-body").querySelector("section > div")!;
+    expect(content).toHaveClass("m-auto", "shrink-0", "w-full", "max-w-3xl");
   });
 });
