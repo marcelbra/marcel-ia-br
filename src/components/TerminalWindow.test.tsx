@@ -136,6 +136,21 @@ describe("TerminalWindow", () => {
     expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 500 });
   });
 
+  it("keeps its rounded corners when it fills the space between header and footer", () => {
+    const win = setup();
+    const title = screen.getByText("~/marcel");
+    expect(win.className).toMatch(/\brounded-xl\b/);
+
+    // Filling the width of the page is not the same as being the page: the
+    // window keeps its own corners rather than squaring off against the chrome.
+    fireEvent.doubleClick(title);
+    expect(win.className).toMatch(/\brounded-xl\b/);
+    expect(win.className).not.toMatch(/\brounded-none\b/);
+
+    fireEvent.doubleClick(title);
+    expect(win.className).toMatch(/\brounded-xl\b/);
+  });
+
   it("measures its own box up front, so zooming has two lengths to animate between", () => {
     const win = setup();
     // A width of `auto` cannot be interpolated: without this the window would
