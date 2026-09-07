@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useCharCapacity } from "@/hooks/use-char-capacity";
-import { clip, clipAscii } from "@/lib/clip";
+import { useFitFontSize } from "@/hooks/use-fit-font-size";
+import { FIT_BOUNDARY, useFittingList } from "@/hooks/use-fitting-list";
+import { splitLetters } from "@/lib/ascii";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -166,47 +167,14 @@ const experiences: Experience[] = [
   },
 ];
 
-interface Segment {
-  text: string;
-  className?: string;
-}
+/** The size the wordmark is set at when the window has room for it in full. */
+const WORDMARK_MAX_PX = 8;
 
 /**
- * One line of terminal text: it never wraps and never grows its box. Whatever
- * does not fit the current width is cut off and marked with ASCII dots, so the
- * card keeps the same height at every window size.
- */
-const ClippedLine = ({ segments }: { segments: Segment[] }) => {
-  const [ref, capacity] = useCharCapacity<HTMLSpanElement>();
-  const full = segments.map((segment) => segment.text).join("");
-  const shown = clip(full, capacity);
-
-  let cursor = 0;
-  return (
-    <span
-      ref={ref}
-      className="min-w-0 flex-1 overflow-hidden whitespace-nowrap"
-      title={shown === full ? undefined : full}
-    >
-      {segments.map((segment, i) => {
-        const part = shown.slice(cursor, cursor + segment.text.length);
-        cursor += segment.text.length;
-        return part ? (
-          <span key={i} className={segment.className}>
-            {part}
-          </span>
-        ) : null;
-      })}
-    </span>
-  );
-};
-
-/**
- * The ASCII wordmark stays on screen at every width — no swapping it out for
- * plain text. It is only cut down, column by column, once it runs into the edge
- * of the window, which for a short mark like KPN never happens. It loses whole
- * letters, never half a glyph, and the font's own ellipsis — three big dots on
- * the baseline — follows the last letter left standing.
+ * The ASCII wordmark stays on screen whole at every width — no swapping it out
+ * for plain text, and no cutting its tail off either. Once it runs into the
+ * edge of the window it is set smaller instead, so NEWTONE still reads as
+ * NEWTONE on a phone.
  *
  * The art is six rows of box drawing characters, so marking it natively drags
  * through those rows rather than through the letters they draw. Every letter is
@@ -215,8 +183,8 @@ const ClippedLine = ({ segments }: { segments: Segment[] }) => {
  * pointer, and copying it yields the word instead of the art.
  */
 const AsciiLogo = ({ exp }: { exp: Experience }) => {
-  const [ref, capacity] = useCharCapacity<HTMLPreElement>();
-  const letters = clipAscii(exp.asciiLogo, exp.letterWidths, capacity);
+  const [ref, fontSize] = useFitFontSize<HTMLPreElement>(WORDMARK_MAX_PX);
+  const letters = splitLetters(exp.asciiLogo, exp.letterWidths);
 
   const letterAt = (clientX: number) => {
     const rendered = Array.from(ref.current?.children ?? []);
@@ -275,7 +243,8 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
   return (
     <pre
       ref={ref}
-      className={`${exp.color} min-w-0 flex-1 flex overflow-hidden text-[8px] leading-[1.15] tracking-[0.02em] font-bold`}
+      className={`${exp.color} min-w-0 flex-1 flex overflow-hidden leading-[1.15] tracking-[0.02em] font-bold`}
+      style={{ fontSize: `${fontSize}px` }}
       aria-hidden="true"
       onPointerDown={handlePointerDown}
       onCopy={handleCopy}
@@ -286,6 +255,40 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
         </span>
       ))}
     </pre>
+  );
+};
+
+/**
+ * One role. Its text wraps like text anywhere else on the page, and the card
+ * gives way to the window rather than growing out of it: the border always
+ * closes above the bottom edge of the terminal, right under the last bullet
+ * that fits. The ones past it go whole rather than being cut off mid-line.
+ */
+const RoleCard = ({ exp }: { exp: Experience }) => {
+  const [listRef, visible, listHeight] = useFittingList<HTMLUListElement>(exp.bullets.length);
+
+  return (
+    <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 shrink-0">
+        <h3 className="text-foreground font-medium text-lg">
+          {exp.title} <span className={exp.color}>@ {exp.company}</span>
+        </h3>
+        <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
+          {exp.period}
+        </span>
+      </div>
+      <ul ref={listRef} style={{ height: listHeight }} className="space-y-2 min-h-0 overflow-hidden">
+        {exp.bullets.map((bullet, j) => (
+          <li
+            key={j}
+            className={`text-[12px] text-muted-foreground flex items-start gap-2 ${j < visible ? "" : "invisible"}`}
+          >
+            <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
+            <span className="min-w-0 flex-1">{bullet.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 
@@ -354,35 +357,18 @@ const CvSection = () => {
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
-        <div key={i} className="h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full m-auto shrink-0">
-            <div className="flex items-center gap-4 mb-6">
+        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="h-full flex flex-col overflow-hidden px-6 py-6">
+          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
+            <div className="flex items-center gap-4 mb-6 shrink-0">
               <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
               <AsciiLogo exp={exp} />
             </div>
 
-            <div className="mt-2 mb-4 text-muted-foreground">
+            <div className="mb-4 shrink-0 text-muted-foreground">
               <span className={exp.color}>$</span> {exp.command ?? "cat role.txt"}
             </div>
 
-            <div className={`border ${exp.borderColor} rounded bg-card/50 p-5`}>
-              <div className="flex items-baseline justify-between gap-2 mb-4">
-                <h3 className="flex min-w-0 flex-1 text-foreground font-medium text-lg">
-                  <ClippedLine segments={[{ text: `${exp.title} ` }, { text: `@ ${exp.company}`, className: exp.color }]} />
-                </h3>
-                <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
-                  {exp.period}
-                </span>
-              </div>
-              <ul className="space-y-2">
-                {exp.bullets.map((bullet, j) => (
-                  <li key={j} className="text-[12px] text-muted-foreground flex items-start gap-2">
-                    <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
-                    <ClippedLine segments={[{ text: bullet.text }]} />
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <RoleCard exp={exp} />
           </div>
         </div>
       ))}
