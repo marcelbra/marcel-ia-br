@@ -89,22 +89,31 @@
 }
 
 @layer utilities {
-  /* The height of a page that does not scroll. 100vh on a phone is the height
-     the viewport has once the URL bar has scrolled away, so a shell sized in
-     it is taller than what you can actually see: the page has somewhere to
-     scroll to, and the bar collapses and expands under your thumb while you
-     mean to be scrolling the terminal. svh is the height with the bar
-     showing, and it never changes, so the shell always fits and nothing
-     moves. vh stays as the fallback for browsers without svh. */
+  /* The height of the screen, for a page that should end exactly there. 100vh
+     on a phone is the height the viewport has once the URL bar has scrolled
+     away, so a page sized in it is taller than what you can actually see: it
+     has somewhere to scroll to, and the bar collapses and expands under your
+     thumb the whole way. svh is the height with the bar showing, and it never
+     changes, so a page that fits stays exactly still. h-viewport is for a page
+     that never scrolls; min-h-viewport for one that fills the screen and then
+     grows with whatever it holds. */
   .h-viewport {
     height: 100vh;
   }
 
-  /* Written out rather than as two height declarations in a row: the minifier
-     drops the first of those as dead, and the fallback with it. */
+  .min-h-viewport {
+    min-height: 100vh;
+  }
+
+  /* Written out rather than as two declarations in a row: the minifier drops
+     the first of those as dead, and the vh fallback with it. */
   @supports (height: 100svh) {
     .h-viewport {
       height: 100svh;
+    }
+
+    .min-h-viewport {
+      min-height: 100svh;
     }
   }
 

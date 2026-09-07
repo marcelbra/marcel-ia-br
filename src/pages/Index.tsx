@@ -102,14 +102,21 @@ const Index = () => {
   };
 
   return (
-    <div className={`bg-background flex flex-col ${expanded ? 'min-h-screen' : 'h-viewport overflow-hidden'}`}>
+    <div className={`bg-background flex flex-col ${expanded ? 'min-h-viewport' : 'h-viewport overflow-hidden'}`}>
       <Header activeSection={activeSection} onNavigate={navigateToSection} disabled={terminalClosed} />
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-20 min-h-0 [@media(max-height:640px)]:pt-16 [@media(max-height:640px)]:pb-8 [@media(max-height:480px)]:pt-14 [@media(max-height:480px)]:pb-4">
-        <div className="w-full max-w-4xl h-full">
+      {/* The terminal is centred in whatever room is left and clamped to it —
+          min-h-0 is what lets it be squeezed rather than push the page taller.
+          Expanded, the same room is a document instead: it starts at the top,
+          takes the height it needs, and is padded only enough to clear the
+          header and the footer, which are both fixed over it. Every pixel of
+          padding beyond them is a pixel of scroll on a section that would
+          otherwise have fitted on the screen. */}
+      <main className={`flex-1 flex flex-col items-center px-6 ${expanded
+        ? 'pt-16 pb-16'
+        : 'justify-center min-h-0 pt-20 pb-20 [@media(max-height:640px)]:pt-16 [@media(max-height:640px)]:pb-8 [@media(max-height:480px)]:pt-14 [@media(max-height:480px)]:pb-4'}`}>
+        <div className={`w-full max-w-4xl ${expanded ? '' : 'h-full'}`}>
           {expanded ? (
-            <div className="py-6">
-              {renderContent()}
-            </div>
+            renderContent()
           ) : minimized ? (
             <div className="h-full max-h-[70vh] flex items-center justify-center">
               <span className="font-mono text-sm text-muted-foreground/40 animate-fade-in">
