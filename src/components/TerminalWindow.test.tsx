@@ -73,6 +73,25 @@ const dragHandle = (win: HTMLElement, dir: string, to: { x: number; y: number })
   fireEvent.mouseUp(window);
 };
 
+/** The title bar the body sits under, and how tall the body's content is. */
+const TITLE_H = 32;
+const CONTENT_H = 300;
+
+/**
+ * jsdom gives every element a scroll box of zero, so the body gets a believable
+ * one: it is what the window has left under the title bar, holding content of a
+ * fixed height that stretches to fill the box when there is room to spare —
+ * which is what `min-h-full` does to the sections in the real page.
+ */
+const layoutBody = (win: HTMLElement) => {
+  const body = screen.getByTestId("terminal-body");
+  let scrollTop = 0;
+  Object.defineProperty(body, "clientHeight", { get: () => Math.max(0, rect(win).height - TITLE_H) });
+  Object.defineProperty(body, "scrollHeight", { get: () => Math.max(CONTENT_H, body.clientHeight) });
+  Object.defineProperty(body, "scrollTop", { get: () => scrollTop, set: (v: number) => { scrollTop = v; } });
+  return body;
+};
+
 const dragTitleBy = (dx: number, dy: number) => {
   press(screen.getByText("~/marcel"), { x: 400, y: 200 });
   fireEvent.mouseMove(window, { clientX: 400 + dx + SLOP, clientY: 200 + dy + SLOP });
@@ -206,6 +225,42 @@ describe("TerminalWindow", () => {
     // A press that means it still moves the window.
     dragTitleBy(30, 40);
     expect(rect(win)).toMatchObject({ left: left + 30, top: top + 40 });
+  });
+
+  it("leaves the content at the top when the bottom edge is dragged in", () => {
+    const win = setup();
+    const body = layoutBody(win);
+    const { bottom } = rect(win);
+
+    // The top edge stays put, so the content stays under it and the resize
+    // takes the tail off the bottom — nothing to scroll.
+    dragHandle(win, "s", { x: 0, y: bottom - 200 });
+    expect(body.scrollTop).toBe(0);
+  });
+
+  it("holds the content against the bottom when the top edge is dragged in", () => {
+    const win = setup();
+    const body = layoutBody(win);
+    const { top } = rect(win);
+
+    // The bottom edge is the one standing still now, so the content is scrolled
+    // by everything the box lost: the last line stays in view and the cut lands
+    // on the top instead.
+    dragHandle(win, "n", { x: 0, y: top + 200 });
+    expect(body.scrollTop).toBe(CONTENT_H - (NATURAL.h - 200 - TITLE_H));
+
+    // And dragging the top edge back where it came from undoes exactly that.
+    dragHandle(win, "n", { x: 0, y: top });
+    expect(body.scrollTop).toBe(0);
+  });
+
+  it("holds the content against the bottom from a corner that carries the top edge", () => {
+    const win = setup();
+    const body = layoutBody(win);
+    const { top, right } = rect(win);
+
+    dragHandle(win, "ne", { x: right - 100, y: top + 200 });
+    expect(body.scrollTop).toBe(CONTENT_H - (NATURAL.h - 200 - TITLE_H));
   });
 
   it("cannot be dragged past the header or the footer", () => {

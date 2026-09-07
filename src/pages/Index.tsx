@@ -119,9 +119,7 @@ const Index = () => {
           ) : (
             <div className="h-full max-h-[70vh]">
               <TerminalWindow title={terminalTitle} onMinimize={handleMinimize} onClose={() => setTerminalClosed(true)} onBooted={() => setTerminalClosed(false)} onFullscreen={() => { if (activeSection === "marcel" || activeSection === "writing") setExpanded(true); }} disableFullscreen={activeSection === "cv" || activeSection === "academics"}>
-                <div className="flex-1 overflow-y-auto h-full">
-                  {renderContent()}
-                </div>
+                {renderContent()}
               </TerminalWindow>
             </div>
           )}
