@@ -203,9 +203,34 @@
     line-height: clamp(1rem, calc(1.833cqw + 10.13px), 1.275rem);
   }
 
-  /* The avatar never scales. Below the width where it stops earning its place
-     it is simply gone. */
-  @container hero (max-width: 300px) {
+  /* Narrow, the hero buys the avatar's row back out of its own spacing rather
+     than out of what it has to say. Halving the gaps between its blocks frees
+     56px of the 112px they take, which is the difference between a phone
+     having room for the avatar and not — and reads as a tighter setting, not
+     as anything missing. Written against .hero-scope so that two classes
+     outrank the one utility each of these carries for its roomier self. */
+  @container hero (max-width: 420px) {
+    .hero-scope .hero-banner-row {
+      margin-bottom: 1rem;
+    }
+
+    .hero-scope .hero-prompt,
+    .hero-scope .hero-bio {
+      margin-bottom: 0.75rem;
+    }
+
+    .hero-scope .hero-fact {
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  /* The avatar never scales, so it is either beside the wordmark whole or not
+     there at all. Whole needs 108px for it, 24px for the gap and 154px for the
+     wordmark set as small as it goes — 286px, and the row is squeezed below
+     that. Held out to the last pixel it fits in rather than rounded up: a
+     phone's terminal is around 292px across, which is on the right side of it
+     by six pixels, and the avatar is the point of the page. */
+  @container hero (max-width: 285px) {
     .hero-avatar {
       display: none;
     }
