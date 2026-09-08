@@ -8,9 +8,30 @@ import WritingPostCard from "@/components/WritingPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
 import { posts } from "@/pages/Writing";
+import { FIT_BOUNDARY, useFittingList } from "@/hooks/use-fitting-list";
 import { useState } from "react";
 
 const RECENT_POSTS = 3;
+
+/**
+ * The most recent posts, cut to what the terminal has room for. Three is what
+ * the front page offers; a phone rarely has the height for three cards under
+ * the heading, and a card half off the bottom edge is not an offer at all —
+ * the rest are behind "Read all posts", which is a page that may scroll.
+ */
+const RecentPosts = () => {
+  const [listRef, visible, height] = useFittingList<HTMLDivElement>(RECENT_POSTS);
+
+  return (
+    <div ref={listRef} style={{ height }} className="overflow-hidden">
+      {posts.slice(0, RECENT_POSTS).map((post, i) => (
+        <div key={post.slug} style={{ visibility: i < visible ? undefined : "hidden" }}>
+          <WritingPostCard {...post} />
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const sections = ["marcel", "cv", "academics", "writing"] as const;
 
@@ -43,8 +64,8 @@ const Index = () => {
   const renderContent = () => {
       if (activeSection === "marcel") {
       return (
-        <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
-          <div className={`w-full max-w-3xl ${expanded ? '' : 'shrink-0'}`}>
+        <section {...(expanded ? {} : { [FIT_BOUNDARY]: true })} className={`px-6 ${expanded ? 'pt-6' : 'py-6 h-full flex flex-col'}`}>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
@@ -69,8 +90,8 @@ const Index = () => {
 
     if (activeSection === "writing") {
       return (
-        <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
-          <div className={`w-full max-w-3xl ${expanded ? '' : 'shrink-0'}`}>
+        <section {...(expanded ? {} : { [FIT_BOUNDARY]: true })} className={`px-6 ${expanded ? 'pt-6' : 'py-6 h-full flex flex-col'}`}>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
@@ -80,11 +101,15 @@ const Index = () => {
               </button>
             )}
             <SectionHeading label="Writing" title={expanded ? "All Posts" : "Recent Posts"} />
-            <div>
-              {(expanded ? posts : posts.slice(0, RECENT_POSTS)).map((post) => (
-                <WritingPostCard key={post.slug} {...post} />
-              ))}
-            </div>
+            {expanded ? (
+              <div>
+                {posts.map((post) => (
+                  <WritingPostCard key={post.slug} {...post} />
+                ))}
+              </div>
+            ) : (
+              <RecentPosts />
+            )}
             {!expanded && (
               <button
                 onClick={() => setExpanded(true)}

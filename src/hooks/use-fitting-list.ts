@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 export const FIT_BOUNDARY = "data-fit-boundary";
 
 interface Fit {
-  /** How many items, counted from the top, the boundary has room for. */
+  /** How many items, counting from the first one shown, the boundary has room for. */
   count: number;
   /** The height that leaves exactly those showing, or undefined while all fit. */
   height?: number;
@@ -12,20 +12,32 @@ interface Fit {
 
 /**
  * Fit a list into the box marked with {@link FIT_BOUNDARY} above it: how many
- * of its items there is room for, and the height that shows those and no more.
- * Items past the count are the ones the box has no room for — hide them with
- * `visibility`, not `display`, and let the height clip them away.
+ * of its items there is room for, counting from `from`, and the height to give
+ * it. Items outside that run are the ones the box has no room for — hide them
+ * with `visibility`, not `display`, and let the height clip them away. Scroll
+ * the box to the item at `from` to bring the run into view; `scrollTop` moves
+ * nothing in the layout, so it cannot disturb this.
  *
- * That is what keeps the answer stable. The items stay in the layout, so what
- * would fit is measurable at every size; the room they are measured against is
- * read as the boundary's height less everything beside the list, which is the
- * same number before and after the list is cut down. So the count settles in
- * one pass instead of chasing itself as items go and come back.
+ * A list that fits keeps its own height, and the box closes under its last
+ * item. A list that does not is one page of several and is given the whole of
+ * the room instead, which is the same on every page — so its box holds still
+ * as the pages turn.
+ *
+ * Keeping every item in the layout is what keeps the answer stable. What would
+ * fit is measurable at every size; the room it is measured against is read as
+ * the boundary's height less everything beside the list, which is the same
+ * number before and after the list is cut down, and the same at every `from`.
+ * So the count settles in one pass instead of chasing itself as items go and
+ * come back.
+ *
+ * The count never falls to nothing: a box with room for no item at all is
+ * given one anyway, and the terminal's own minimum height is what keeps that
+ * one from running past the card it is in.
  *
  * Everything is kept while there is nothing to measure (no layout yet, jsdom),
  * so a list is never cut on a guess.
  */
-export function useFittingList<T extends HTMLElement>(total: number) {
+export function useFittingList<T extends HTMLElement>(total: number, from = 0) {
   const ref = useRef<T>(null);
   const [fit, setFit] = useState<Fit>({ count: total });
 
@@ -52,10 +64,11 @@ export function useFittingList<T extends HTMLElement>(total: number) {
       const inside = boundary.clientHeight - pad(style.paddingTop) - pad(style.paddingBottom);
       const room = inside - (block.getBoundingClientRect().height - el.getBoundingClientRect().height);
 
-      const top = items[0].getBoundingClientRect().top;
+      const start = Math.min(from, items.length - 1);
+      const top = items[start].getBoundingClientRect().top;
       let count = 0;
       let height = 0;
-      for (const item of items) {
+      for (const item of items.slice(start)) {
         // Half a pixel of slack: a fractional layout must not cost a whole line.
         const bottom = item.getBoundingClientRect().bottom - top;
         if (bottom > room + 0.5) break;
@@ -63,7 +76,23 @@ export function useFittingList<T extends HTMLElement>(total: number) {
         height = bottom;
       }
 
-      const next: Fit = count === items.length ? { count } : { count, height };
+      // A box too short for even one item still shows one. A role that says
+      // nothing at all is worse than one whose last line runs past its card,
+      // and the window has a floor under it that keeps that from happening.
+      if (count === 0) {
+        count = 1;
+        height = items[start].getBoundingClientRect().height;
+      }
+
+      // Only a list showing all of itself from the top may keep its own height.
+      // Any other list is one page of several, and takes the whole of the room
+      // rather than the height of what happens to be on it. The room is the
+      // same on every page, so the box around a paged list never changes size:
+      // turning a page moves the bullets and nothing else. Sized to its own
+      // page instead, a short last page would pull the card's bottom up — and
+      // its top down with it, the card being centred in what it is given.
+      const whole = start === 0 && count === items.length;
+      const next: Fit = whole ? { count } : { count, height: Math.max(room, height) };
       setFit((current) => (current.count === next.count && current.height === next.height ? current : next));
     };
 
@@ -81,7 +110,7 @@ export function useFittingList<T extends HTMLElement>(total: number) {
       alive = false;
       observer.disconnect();
     };
-  }, [total]);
+  }, [total, from]);
 
   return [ref, fit.count, fit.height] as const;
 }

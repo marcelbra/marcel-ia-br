@@ -1,4 +1,7 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import EntryHeading from "@/components/EntryHeading";
+import PagedBullets from "@/components/PagedBullets";
+import { FIT_BOUNDARY } from "@/hooks/use-fitting-list";
+import { usePageStack } from "@/hooks/use-page-stack";
 import technicoLogo from "@/assets/technico-logo.png";
 import goetheLogo from "@/assets/goethe-logo.png";
 import lmuLogo from "@/assets/lmu-logo.png";
@@ -102,86 +105,24 @@ const entries: Education[] = [
 ];
 
 const AcademicsSection = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const currentIndexRef = useRef(0);
-  const lockedUntilRef = useRef(0);
-
-  const scrollToIndex = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(entries.length - 1, index));
-    if (clamped === currentIndexRef.current) return;
-    currentIndexRef.current = clamped;
-    setCurrentIndex(clamped);
-    const container = containerRef.current;
-    if (!container) return;
-    container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    lockedUntilRef.current = Date.now() + 1200;
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (Date.now() < lockedUntilRef.current) return;
-      if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
-    };
-
-    let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() < lockedUntilRef.current) return;
-      const diff = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd, { passive: true });
-    return () => {
-      container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [scrollToIndex]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || typeof ResizeObserver === "undefined") return;
-
-    // The stack is scrolled by pixels, so a resize leaves the current entry off
-    // its mark by however much the page height changed — and the entry next to
-    // it shows through the gap. Snap back to the current page instead.
-    const realign = () => {
-      container.children[currentIndexRef.current]?.scrollIntoView({ block: "start" });
-    };
-    const observer = new ResizeObserver(realign);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
+  const containerRef = usePageStack<HTMLDivElement>(entries.length);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {entries.map((entry, i) => (
-        <div key={i} className="h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full shrink-0">
-            <div className="flex items-center mb-6">
+        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="h-full flex flex-col overflow-hidden px-6 py-6">
+          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
+            <div className="flex items-center mb-6 shrink-0">
               <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
             </div>
 
-            <div className="mt-2 mb-4 text-muted-foreground">
+            <div className="mt-2 mb-4 shrink-0 text-muted-foreground">
               <span className={entry.color}>$</span> {entry.command ?? "cat degree.txt"}
             </div>
 
-            <div className={`border ${entry.borderColor} rounded bg-card/50 p-5`}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                <h3 className="text-foreground font-medium text-lg">
-                  {entry.title} <span className={entry.color}>@ {entry.institution}</span>
-                </h3>
-                <div className="flex flex-col items-end gap-1">
+            <div className={`border ${entry.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
+              <EntryHeading title={entry.title} at={entry.institution} color={entry.color} className="text-lg">
+                <div className="shrink-0 flex flex-col items-end gap-1">
                   <span className={`text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background relative ${entry.periodInfo ? 'group/main cursor-help' : ''}`}>
                     {entry.period}
                     {entry.periodInfo && (
@@ -207,15 +148,21 @@ const AcademicsSection = () => {
                     </span>
                   )}
                 </div>
-              </div>
-              <ul className="space-y-2">
-                {entry.bullets.map((bullet, j) => {
+              </EntryHeading>
+              <PagedBullets
+                total={entry.bullets.length}
+                color={entry.color}
+                className="space-y-2"
+                itemClassName="text-[12px] text-muted-foreground flex gap-2"
+              >
+                {(j) => {
+                  const bullet = entry.bullets[j];
                   const prefix = typeof bullet === "string" ? undefined : bullet.prefix;
                   const text = typeof bullet === "string" ? bullet : bullet.text;
                   const link = typeof bullet === "string" ? undefined : bullet.link;
                   const suffix = typeof bullet === "string" ? undefined : bullet.suffix;
                   return (
-                    <li key={j} className="text-[12px] text-muted-foreground flex gap-2">
+                    <>
                       <span className="text-ansi-yellow shrink-0">›</span>
                       {link ? (
                         <span>
@@ -224,10 +171,10 @@ const AcademicsSection = () => {
                       ) : (
                         <span className="whitespace-pre-line">{text}{suffix && <span className="text-lg leading-none">{suffix}</span>}</span>
                       )}
-                    </li>
+                    </>
                   );
-                })}
-              </ul>
+                }}
+              </PagedBullets>
             </div>
           </div>
         </div>

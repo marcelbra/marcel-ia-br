@@ -1,7 +1,9 @@
-import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useFitFontSize } from "@/hooks/use-fit-font-size";
-import { FIT_BOUNDARY, useFittingList } from "@/hooks/use-fitting-list";
+import { FIT_BOUNDARY } from "@/hooks/use-fitting-list";
+import { usePageStack } from "@/hooks/use-page-stack";
 import { splitLetters } from "@/lib/ascii";
+import EntryHeading from "@/components/EntryHeading";
+import PagedBullets from "@/components/PagedBullets";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -150,7 +152,7 @@ const experiences: Experience[] = [
     letterWidths: [8, 8, 8, 10, 8, 9, 8],
     logo: eraneosLogo,
     title: "AI Engineer",
-    company: "Eraneos Analytics Germany",
+    company: "Eraneos",
     period: "Jan 2023 — Feb 2025",
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
@@ -272,154 +274,40 @@ const RoleIntro = ({ exp }: { exp: Experience }) => (
   </>
 );
 
-/**
- * One role. Its text wraps like text anywhere else on the page, and the card
- * gives way to the window rather than growing out of it: the border always
- * closes above the bottom edge of the terminal, right under the last bullet
- * that fits. The ones past it go whole rather than being cut off mid-line —
- * and `onOpen` is how a reader gets to them: the card says how many it is
- * holding back and opens the role in full when asked.
- *
- * Away from a page of the stack there is no boundary above it, and the card
- * then simply shows everything it has.
- */
-const RoleCard = ({ exp, onOpen }: { exp: Experience; onOpen?: () => void }) => {
-  const [listRef, visible, listHeight] = useFittingList<HTMLUListElement>(exp.bullets.length);
-  const held = exp.bullets.length - visible;
-
-  return (
-    <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 shrink-0">
-        <h3 className="cv-role-title text-foreground font-medium">
-          {exp.title} <span className={exp.color}>@ {exp.company}</span>
-        </h3>
-        <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
-          {exp.period}
-        </span>
-      </div>
-      <ul ref={listRef} style={{ height: listHeight }} className="space-y-2 min-h-0 overflow-hidden">
-        {exp.bullets.map((bullet, j) => (
-          <li
-            key={j}
-            className={`cv-role-bullet text-muted-foreground flex items-start gap-2 ${j < visible ? "" : "invisible"}`}
-          >
-            <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
-            <span className="min-w-0 flex-1">{bullet.text}</span>
-          </li>
-        ))}
-      </ul>
-      {held > 0 && onOpen && (
-        <button
-          onClick={onOpen}
-          className={`cv-role-bullet shrink-0 self-start pt-3 ${exp.color} hover:underline underline-offset-2`}
-        >
-          › +{held} more
-        </button>
+/** One role: its heading, and as many of its bullets as the card has room for. */
+const RoleCard = ({ exp }: { exp: Experience }) => (
+  <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
+    <EntryHeading title={exp.title} at={exp.company} color={exp.color} className="cv-role-title">
+      <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
+        {exp.period}
+      </span>
+    </EntryHeading>
+    <PagedBullets
+      total={exp.bullets.length}
+      color={exp.color}
+      className="space-y-2"
+      itemClassName="cv-role-bullet text-muted-foreground flex items-start gap-2"
+    >
+      {(j) => (
+        <>
+          <PixelIcon name={exp.bullets[j].icon} className={exp.bullets[j].icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
+          <span className="min-w-0 flex-1">{exp.bullets[j].text}</span>
+        </>
       )}
-    </div>
-  );
-};
+    </PagedBullets>
+  </div>
+);
 
 const CvSection = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  // Set to the role being read in full, on its own, outside the stack.
-  const [openRole, setOpenRole] = useState<number | null>(null);
-  const openRef = useRef<HTMLDivElement>(null);
-  const currentIndexRef = useRef(0);
-  const lockedUntilRef = useRef(0);
-
-  // A role opens at its beginning. The stack it came out of scrolls smoothly,
-  // and a scroll still running when the role opens would otherwise carry it
-  // straight past the first lines.
-  useLayoutEffect(() => {
-    if (openRole !== null && openRef.current) openRef.current.scrollTop = 0;
-  }, [openRole]);
-
-  const scrollToIndex = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndexRef.current) return;
-    currentIndexRef.current = clamped;
-    setCurrentIndex(clamped);
-    const container = containerRef.current;
-    if (!container) return;
-    container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    lockedUntilRef.current = Date.now() + 1200;
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (Date.now() < lockedUntilRef.current) return;
-      if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
-    };
-
-    let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() < lockedUntilRef.current) return;
-      const diff = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd, { passive: true });
-    return () => {
-      container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [scrollToIndex, openRole]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || typeof ResizeObserver === "undefined") return;
-
-    // The stack is scrolled by pixels, so a resize leaves the current entry off
-    // its mark by however much the page height changed — and the entry next to
-    // it shows through the gap. Snap back to the current page instead.
-    const realign = () => {
-      container.children[currentIndexRef.current]?.scrollIntoView({ block: "start" });
-    };
-    // Coming back from an opened role is the same problem: the stack is at the
-    // top again and the entry that was being read is somewhere below it.
-    if (currentIndexRef.current > 0) realign();
-    const observer = new ResizeObserver(realign);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [openRole]);
-
-  if (openRole !== null) {
-    const exp = experiences[openRole];
-    return (
-      <div ref={openRef} className="cv-scope h-full overflow-y-auto px-6 py-6">
-        <div className="max-w-3xl w-full">
-          <button
-            onClick={() => setOpenRole(null)}
-            className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-          >
-            ← back
-          </button>
-          <RoleIntro exp={exp} />
-          <RoleCard exp={exp} />
-        </div>
-      </div>
-    );
-  }
+  const containerRef = usePageStack<HTMLDivElement>(experiences.length);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
         <div key={i} {...{ [FIT_BOUNDARY]: true }} className="cv-scope h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full min-h-0 flex flex-col">
+          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
             <RoleIntro exp={exp} />
-            <RoleCard exp={exp} onOpen={() => setOpenRole(i)} />
+            <RoleCard exp={exp} />
           </div>
         </div>
       ))}
