@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 export const FIT_BOUNDARY = "data-fit-boundary";
 
 interface Fit {
-  /** How many items, counted from the top, the boundary has room for. */
+  /** How many items, counting from the first one shown, the boundary has room for. */
   count: number;
   /** The height that leaves exactly those showing, or undefined while all fit. */
   height?: number;
@@ -12,20 +12,23 @@ interface Fit {
 
 /**
  * Fit a list into the box marked with {@link FIT_BOUNDARY} above it: how many
- * of its items there is room for, and the height that shows those and no more.
- * Items past the count are the ones the box has no room for — hide them with
- * `visibility`, not `display`, and let the height clip them away.
+ * of its items there is room for, counting from `from`, and the height that
+ * shows those and no more. Items outside that run are the ones the box has no
+ * room for — hide them with `visibility`, not `display`, and let the height
+ * clip them away. Scroll the box to the item at `from` to bring the run into
+ * view; `scrollTop` moves nothing in the layout, so it cannot disturb this.
  *
- * That is what keeps the answer stable. The items stay in the layout, so what
- * would fit is measurable at every size; the room they are measured against is
- * read as the boundary's height less everything beside the list, which is the
- * same number before and after the list is cut down. So the count settles in
- * one pass instead of chasing itself as items go and come back.
+ * Keeping every item in the layout is what keeps the answer stable. What would
+ * fit is measurable at every size; the room it is measured against is read as
+ * the boundary's height less everything beside the list, which is the same
+ * number before and after the list is cut down, and the same at every `from`.
+ * So the count settles in one pass instead of chasing itself as items go and
+ * come back.
  *
  * Everything is kept while there is nothing to measure (no layout yet, jsdom),
  * so a list is never cut on a guess.
  */
-export function useFittingList<T extends HTMLElement>(total: number) {
+export function useFittingList<T extends HTMLElement>(total: number, from = 0) {
   const ref = useRef<T>(null);
   const [fit, setFit] = useState<Fit>({ count: total });
 
@@ -52,10 +55,11 @@ export function useFittingList<T extends HTMLElement>(total: number) {
       const inside = boundary.clientHeight - pad(style.paddingTop) - pad(style.paddingBottom);
       const room = inside - (block.getBoundingClientRect().height - el.getBoundingClientRect().height);
 
-      const top = items[0].getBoundingClientRect().top;
+      const start = Math.min(from, items.length - 1);
+      const top = items[start].getBoundingClientRect().top;
       let count = 0;
       let height = 0;
-      for (const item of items) {
+      for (const item of items.slice(start)) {
         // Half a pixel of slack: a fractional layout must not cost a whole line.
         const bottom = item.getBoundingClientRect().bottom - top;
         if (bottom > room + 0.5) break;
@@ -63,7 +67,9 @@ export function useFittingList<T extends HTMLElement>(total: number) {
         height = bottom;
       }
 
-      const next: Fit = count === items.length ? { count } : { count, height };
+      // Only a list showing all of itself from the top may keep its own height.
+      const whole = start === 0 && count === items.length;
+      const next: Fit = whole ? { count } : { count, height };
       setFit((current) => (current.count === next.count && current.height === next.height ? current : next));
     };
 
@@ -81,7 +87,7 @@ export function useFittingList<T extends HTMLElement>(total: number) {
       alive = false;
       observer.disconnect();
     };
-  }, [total]);
+  }, [total, from]);
 
   return [ref, fit.count, fit.height] as const;
 }
