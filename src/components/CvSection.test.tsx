@@ -90,10 +90,34 @@ describe("CvSection at a narrow width", () => {
     const { container } = render(<CvSection />);
 
     const [role] = container.querySelectorAll("h3");
-    expect(role.textContent).toBe("Machine Learning Engineer @ Royal KPN N.V.");
+    expect(role.textContent).toBe("Machine Learning Engineer@ Royal KPN N.V.");
     // The period sits beside the title while there is room and drops below it
     // when there is not — the same header as an academics entry.
     expect(role.parentElement!.className).toContain("flex-wrap");
+  });
+
+  it("comes apart a whole phrase at a time, the period first and the title last", () => {
+    stubLayout(200, 5);
+    const { container } = render(<CvSection />);
+
+    // jsdom does no layout, so this guards the structure the cascade is made
+    // of: two nested wrapping rows. The outer holds the title row and the
+    // period, so the period is the first thing to drop; the inner holds the
+    // title and the company, so the company drops next and takes its @ with
+    // it. Flex wraps an item before it squeezes it, which leaves the title —
+    // alone on a line by then, with nothing left to give up — as the only one
+    // that ever breaks mid-phrase.
+    const [role] = container.querySelectorAll("h3");
+    const [title, company] = role.children;
+    expect(role.className).toContain("flex-wrap");
+    expect(title.textContent).toBe("Machine Learning Engineer");
+    expect(company.textContent).toBe("@ Royal KPN N.V.");
+
+    // And the period is the outer row's last item, beside the title row.
+    const header = role.parentElement!;
+    expect(header.children).toHaveLength(2);
+    expect(header.lastElementChild!.textContent).toBe("Sep 2025 — Present");
+    expect(header.lastElementChild!.className).toContain("shrink-0");
   });
 
   it("sets the ascii wordmark smaller instead of dropping letters from it", () => {

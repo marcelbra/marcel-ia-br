@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react
 import { useFitFontSize } from "@/hooks/use-fit-font-size";
 import { FIT_BOUNDARY, useFittingList } from "@/hooks/use-fitting-list";
 import { splitLetters } from "@/lib/ascii";
+import EntryHeading from "@/components/EntryHeading";
 import kpnLogo from "@/assets/kpn-logo.png";
 import newtoneLogo from "@/assets/newtone-logo.png";
 import eraneosLogo from "@/assets/eraneos-logo.png";
@@ -289,14 +290,11 @@ const RoleCard = ({ exp, onOpen }: { exp: Experience; onOpen?: () => void }) => 
 
   return (
     <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 shrink-0">
-        <h3 className="cv-role-title text-foreground font-medium">
-          {exp.title} <span className={exp.color}>@ {exp.company}</span>
-        </h3>
+      <EntryHeading title={exp.title} at={exp.company} color={exp.color} className="cv-role-title">
         <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
           {exp.period}
         </span>
-      </div>
+      </EntryHeading>
       <ul ref={listRef} style={{ height: listHeight }} className="space-y-2 min-h-0 overflow-hidden">
         {exp.bullets.map((bullet, j) => (
           <li
