@@ -242,10 +242,14 @@ const Hero = () => {
 ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
-          <div style={hideAvatar(fit.avatar)} className="hero-avatar relative">
+          {/* select-none and draggable: dragging across the hero used to pick the
+              avatar up and mark it, which is not something a picture of someone
+              waving should do. Hovering it still wakes it. */}
+          <div style={hideAvatar(fit.avatar)} className="hero-avatar relative shrink-0 select-none">
             <img
               src={AVATAR_FRAMES[frameIndex]}
               alt="Marcel Braasch pixel avatar"
+              draggable={false}
               className="h-[10.14rem] w-auto mb-[-1.22rem] cursor-default"
               onMouseEnter={handleWelcomeEnter}
             />
@@ -253,7 +257,7 @@ const Hero = () => {
               // To the left of the avatar, where there is always room: the avatar
               // sits at the end of the row, so a bubble on its right hangs off the
               // window edge and a phone never sees it. The tail follows it over.
-              <div className="absolute -top-3 right-full mr-2 z-10 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-br-none border-2 border-hoodie-blue shadow-[0_2px_12px_rgba(255,255,255,0.15)] whitespace-nowrap animate-fade-in">
+              <div className="absolute -top-3 right-full -mr-5 z-10 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-br-none border-2 border-hoodie-blue shadow-[0_2px_12px_rgba(255,255,255,0.15)] whitespace-nowrap animate-fade-in">
                 Hey there!
               </div>
             )}
