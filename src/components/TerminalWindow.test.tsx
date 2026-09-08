@@ -7,7 +7,13 @@ const VIEW_H = window.innerHeight;
 const HEADER_BOTTOM = 48;
 const FOOTER_TOP = VIEW_H - 68;
 const BASE = { left: 100, top: 120 };
-const NATURAL = { w: 800, h: 400 };
+// Taller than the window's own minimum height, so there is room to drag it
+// smaller — a window already under that minimum is one the floor holds still.
+const NATURAL = { w: 800, h: 560 };
+/** The window's own MIN_H, mirrored: it is what every drag below stops at. */
+const MIN_H = 460;
+/** A shrink that stays clear of that floor, so the drag is the whole story. */
+const SHRUNK_BY = 80;
 
 /** Stubs a rect on an element that jsdom would otherwise report as all zeroes. */
 const fixedRect = (el: HTMLElement, r: { left: number; top: number; right: number; bottom: number }) => {
@@ -75,7 +81,9 @@ const dragHandle = (win: HTMLElement, dir: string, to: { x: number; y: number })
 
 /** The title bar the body sits under, and how tall the body's content is. */
 const TITLE_H = 32;
-const CONTENT_H = 300;
+// Content that fits the window at its natural height and overflows it once the
+// window is dragged in by SHRUNK_BY — which is what the scroll below is about.
+const CONTENT_H = 480;
 
 /**
  * jsdom gives every element a scroll box of zero, so the body gets a believable
@@ -124,8 +132,8 @@ describe("TerminalWindow", () => {
     const title = screen.getByText("~/marcel");
 
     fireEvent.doubleClick(title);
-    dragHandle(win, "se", { x: 700, y: 500 });
-    expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 500 });
+    dragHandle(win, "se", { x: 700, y: 600 });
+    expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 600 });
 
     // We were not filled any more, so this fills rather than restores.
     fireEvent.doubleClick(title);
@@ -133,7 +141,7 @@ describe("TerminalWindow", () => {
 
     // And now the window remembers the size it was last given by hand.
     fireEvent.doubleClick(title);
-    expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 500 });
+    expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: 700, bottom: 600 });
   });
 
   it("keeps a scroll of its body to itself", () => {
@@ -180,17 +188,17 @@ describe("TerminalWindow", () => {
     const win = setup();
     const title = screen.getByText("~/marcel");
 
-    // 0.2s per 150px of the largest edge change: here the height moves furthest,
-    // 400 -> 652, so 252px at 1.333ms/px.
+    // 0.2s per 150px of the largest edge change: here the width moves furthest,
+    // 800 -> 1024, so 224px at 1.333ms/px.
     fireEvent.doubleClick(title);
-    expect(win.style.transitionDuration).toBe("336ms");
+    expect(win.style.transitionDuration).toBe("299ms");
 
     // A window nudged just off the bounds has barely any distance to cover, and
     // must not sit through the same animation.
     dragHandle(win, "se", { x: VIEW_W - 40, y: FOOTER_TOP - 30 });
     fireEvent.doubleClick(title);
     const short = parseInt(win.style.transitionDuration, 10);
-    expect(short).toBeLessThan(336);
+    expect(short).toBeLessThan(299);
     expect(short).toBeGreaterThanOrEqual(160);
   });
 
@@ -204,11 +212,11 @@ describe("TerminalWindow", () => {
     dragHandle(win, "w", { x: left + 50, y: 0 });
     expect(rect(win)).toMatchObject({ left: left + 50, top, right: right - 150, bottom });
 
-    dragHandle(win, "s", { x: 0, y: bottom - 80 });
-    expect(rect(win)).toMatchObject({ left: left + 50, top, right: right - 150, bottom: bottom - 80 });
+    dragHandle(win, "s", { x: 0, y: bottom - 50 });
+    expect(rect(win)).toMatchObject({ left: left + 50, top, right: right - 150, bottom: bottom - 50 });
 
-    dragHandle(win, "n", { x: 0, y: top + 40 });
-    expect(rect(win)).toMatchObject({ left: left + 50, top: top + 40, right: right - 150, bottom: bottom - 80 });
+    dragHandle(win, "n", { x: 0, y: top + 30 });
+    expect(rect(win)).toMatchObject({ left: left + 50, top: top + 30, right: right - 150, bottom: bottom - 50 });
   });
 
   it("resizes both axes at once from a corner and stops at the minimum size", () => {
@@ -216,7 +224,7 @@ describe("TerminalWindow", () => {
     const { left, top } = rect(win);
 
     dragHandle(win, "se", { x: left + 40, y: top + 20 });
-    expect(rect(win)).toMatchObject({ left, top, width: 320, height: 160 });
+    expect(rect(win)).toMatchObject({ left, top, width: 320, height: MIN_H });
   });
 
   it("cannot be resized past the header or the footer", () => {
@@ -248,8 +256,8 @@ describe("TerminalWindow", () => {
     expect(rect(win)).toMatchObject({ left, top });
 
     // A press that means it still moves the window.
-    dragTitleBy(30, 40);
-    expect(rect(win)).toMatchObject({ left: left + 30, top: top + 40 });
+    dragTitleBy(30, 20);
+    expect(rect(win)).toMatchObject({ left: left + 30, top: top + 20 });
   });
 
   it("leaves the content at the top when the bottom edge is dragged in", () => {
@@ -271,8 +279,8 @@ describe("TerminalWindow", () => {
     // The bottom edge is the one standing still now, so the content is scrolled
     // by everything the box lost: the last line stays in view and the cut lands
     // on the top instead.
-    dragHandle(win, "n", { x: 0, y: top + 200 });
-    expect(body.scrollTop).toBe(CONTENT_H - (NATURAL.h - 200 - TITLE_H));
+    dragHandle(win, "n", { x: 0, y: top + SHRUNK_BY });
+    expect(body.scrollTop).toBe(CONTENT_H - (NATURAL.h - SHRUNK_BY - TITLE_H));
 
     // And dragging the top edge back where it came from undoes exactly that.
     dragHandle(win, "n", { x: 0, y: top });
@@ -284,8 +292,8 @@ describe("TerminalWindow", () => {
     const body = layoutBody(win);
     const { top, right } = rect(win);
 
-    dragHandle(win, "ne", { x: right - 100, y: top + 200 });
-    expect(body.scrollTop).toBe(CONTENT_H - (NATURAL.h - 200 - TITLE_H));
+    dragHandle(win, "ne", { x: right - 100, y: top + SHRUNK_BY });
+    expect(body.scrollTop).toBe(CONTENT_H - (NATURAL.h - SHRUNK_BY - TITLE_H));
   });
 
   it("cannot be dragged past the header or the footer", () => {

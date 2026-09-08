@@ -25,6 +25,10 @@ interface Fit {
  * So the count settles in one pass instead of chasing itself as items go and
  * come back.
  *
+ * The count never falls to nothing: a box with room for no item at all is
+ * given one anyway, and the terminal's own minimum height is what keeps that
+ * one from running past the card it is in.
+ *
  * Everything is kept while there is nothing to measure (no layout yet, jsdom),
  * so a list is never cut on a guess.
  */
@@ -65,6 +69,14 @@ export function useFittingList<T extends HTMLElement>(total: number, from = 0) {
         if (bottom > room + 0.5) break;
         count += 1;
         height = bottom;
+      }
+
+      // A box too short for even one item still shows one. A role that says
+      // nothing at all is worse than one whose last line runs past its card,
+      // and the window has a floor under it that keeps that from happening.
+      if (count === 0) {
+        count = 1;
+        height = items[start].getBoundingClientRect().height;
       }
 
       // Only a list showing all of itself from the top may keep its own height.

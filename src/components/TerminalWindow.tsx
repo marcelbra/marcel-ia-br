@@ -33,7 +33,11 @@ const CLOSED_KEY = "terminal-closed";
 // the zoom that follows pulls it back — which reads as a wobble.
 const DRAG_SLOP = 4;
 const MIN_W = 320;
-const MIN_H = 160;
+// Tall enough that a section still has something to say at the narrowest the
+// window goes: at MIN_W the CV's heading runs to four lines, and this leaves
+// room under it for one whole bullet and the pager, inside the card's border.
+// Any less and the window can be pulled down over its own contents.
+const MIN_H = 460;
 // AppKit animates a window's geometry over NSWindowResizeTime — 0.2s per 150px
 // of change (NSWindow.animationResizeTime:) — so a small hop is quick and a big
 // one takes its time. Same rule here, capped so a full zoom does not drag on a
@@ -394,10 +398,15 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
         const dy = e.clientY - r.startY;
         let { left, top, right, bottom } = r;
         const b = bounds();
-        if (r.dir.includes("e")) right = clamp(r.right + dx, left + MIN_W, b.right);
-        if (r.dir.includes("w")) left = clamp(r.left + dx, b.left, right - MIN_W);
-        if (r.dir.includes("s")) bottom = clamp(r.bottom + dy, top + MIN_H, b.bottom);
-        if (r.dir.includes("n")) top = clamp(r.top + dy, b.top, bottom - MIN_H);
+        // A floor is a floor, not a shove: it never pushes an edge out past the
+        // bounds, and never makes a window that already sits under it bigger
+        // just for having been taken hold of. It only stops it going lower.
+        const minH = Math.min(MIN_H, b.bottom - b.top, r.bottom - r.top);
+        const minW = Math.min(MIN_W, b.right - b.left, r.right - r.left);
+        if (r.dir.includes("e")) right = clamp(r.right + dx, left + minW, b.right);
+        if (r.dir.includes("w")) left = clamp(r.left + dx, b.left, right - minW);
+        if (r.dir.includes("s")) bottom = clamp(r.bottom + dy, top + minH, b.bottom);
+        if (r.dir.includes("n")) top = clamp(r.top + dy, b.top, bottom - minH);
         setOffset({ x: left - r.baseLeft, y: top - r.baseTop });
         setSize({ w: right - left, h: bottom - top });
         return;
