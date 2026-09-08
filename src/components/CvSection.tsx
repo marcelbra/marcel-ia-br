@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useFitFontSize } from "@/hooks/use-fit-font-size";
 import { FIT_BOUNDARY, useFittingList } from "@/hooks/use-fitting-list";
+import WaitingPrompt from "@/components/WaitingPrompt";
 import { splitLetters } from "@/lib/ascii";
 import EntryHeading from "@/components/EntryHeading";
 import kpnLogo from "@/assets/kpn-logo.png";
@@ -423,6 +424,12 @@ const CvSection = () => {
           <div className="max-w-3xl w-full min-h-0 flex flex-col">
             <RoleIntro exp={exp} />
             <RoleCard exp={exp} />
+          </div>
+          {/* The prompt takes whatever the output left of the page, so it shows
+              up under short output and stays away when there is no room for
+              it — it never costs the output a line. */}
+          <div className="max-w-3xl w-full flex-1 min-h-0 overflow-hidden">
+            <WaitingPrompt />
           </div>
         </div>
       ))}

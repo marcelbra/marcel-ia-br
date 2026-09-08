@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import EntryHeading from "@/components/EntryHeading";
+import WaitingPrompt from "@/components/WaitingPrompt";
 import technicoLogo from "@/assets/technico-logo.png";
 import goetheLogo from "@/assets/goethe-logo.png";
 import lmuLogo from "@/assets/lmu-logo.png";
@@ -227,6 +228,12 @@ const AcademicsSection = () => {
                 })}
               </ul>
             </div>
+          </div>
+          {/* The prompt sits in whatever is left of the page, so a window too
+              short for the entry has nowhere to put it and it stays away
+              rather than pushing the card over the fold. */}
+          <div className="max-w-3xl w-full flex-1 min-h-0 overflow-hidden">
+            <WaitingPrompt />
           </div>
         </div>
       ))}
