@@ -151,7 +151,7 @@ const experiences: Experience[] = [
     letterWidths: [8, 8, 8, 10, 8, 9, 8],
     logo: eraneosLogo,
     title: "AI Engineer",
-    company: "Eraneos Analytics Germany",
+    company: "Eraneos",
     period: "Jan 2023 — Feb 2025",
     color: "text-ansi-blue",
     borderColor: "border-ansi-blue/30",
