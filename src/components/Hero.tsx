@@ -264,18 +264,18 @@ const Hero = () => {
           </div>
         </div>
 
-        <div className="text-muted-foreground mb-6">
+        <div className="hero-prompt text-muted-foreground mb-6">
           <span className="text-hoodie-blue">$</span> whoami
         </div>
 
-        <p className="text-foreground mb-4">
+        <p className="hero-fact text-foreground mb-4">
           <span className="text-hoodie-blue">name</span>
           <span className="text-muted-foreground">:</span>{" "}
           <span className="cursor-default">
             marcel braasch
           </span>
         </p>
-        <p className="text-foreground mb-4">
+        <p className="hero-fact text-foreground mb-4">
           <span className="text-hoodie-blue">role</span>
           <span className="text-muted-foreground">:</span>{" "}
           <span className="cursor-default" onMouseEnter={() => { roleScramble(); handleWelcomeEnter(); }} onMouseLeave={() => roleUnscramble()}>{roleDisplay}</span>
@@ -283,7 +283,7 @@ const Hero = () => {
         <p
           ref={bioRef}
           style={clampToLines(fit.lines)}
-          className="text-muted-foreground mb-6 max-w-2xl"
+          className="hero-bio text-muted-foreground mb-6 max-w-2xl"
         >
           <span className="text-hoodie-blue">bio</span>
           <span className="text-muted-foreground">:</span>{" "}
