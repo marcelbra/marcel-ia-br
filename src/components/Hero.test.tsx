@@ -104,3 +104,138 @@ describe("the greeting nobody asked for", () => {
     expect(bubble.className).not.toMatch(/(^|\s)-?right-\d/);
   });
 });
+
+/** The hero's parts, in a stubbed layout: jsdom does none of its own. */
+const LINE = 10;
+const BIO_LINES = 5;
+const BANNER = 20;
+/** The row with the avatar's slot open: 80px of it is the slot. */
+const ROW = 100;
+/** whoami, name, role, the links, and the margins between them. */
+const CHROME = 60;
+
+const realRect = Element.prototype.getBoundingClientRect;
+
+const bioOf = () => [...document.querySelectorAll("p")].find((p) => p.textContent?.startsWith("bio"));
+const rowOf = () => document.querySelector(".hero-banner-row") as HTMLElement | null;
+const avatarShown = () => (document.querySelector(".hero-avatar") as HTMLElement | null)?.style.position !== "absolute";
+const bioLinesShown = () => {
+  const bio = bioOf();
+  if (!bio) return 0;
+  if (bio.style.height === "0px") return 0;
+  return bio.style.webkitLineClamp ? Number(bio.style.webkitLineClamp) : BIO_LINES;
+};
+
+/**
+ * Lay the hero out inside a boundary `room` pixels tall. Every part answers for
+ * whatever the hero is currently showing of itself, so the fit is measured
+ * against the same layout a browser would give it back.
+ */
+const stubHero = (room: number) => {
+  const real = window.getComputedStyle.bind(window);
+  vi.stubGlobal("getComputedStyle", (el: Element, pseudo?: string | null) => {
+    const style = real(el, pseudo ?? undefined);
+    return new Proxy(style, {
+      get(target, key) {
+        if (key === "lineHeight") return `${LINE}px`;
+        const value = target[key as keyof CSSStyleDeclaration];
+        return typeof value === "function" ? (value as () => unknown).bind(target) : value;
+      },
+    });
+  });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.hasAttribute("data-fit-boundary") ? room : 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this === bioOf() ? BIO_LINES * LINE : 0;
+    },
+  });
+
+  const hero = () => (avatarShown() ? ROW : BANNER) + CHROME + bioLinesShown() * LINE;
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    const el = this as HTMLElement;
+    const box = (height: number) =>
+      ({ height, top: 0, bottom: height, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+    if (el.tagName === "PRE") return box(BANNER);
+    if (el === rowOf()) return box(avatarShown() ? ROW : BANNER);
+    if (el === bioOf()) return box(bioLinesShown() * LINE);
+    // The hero's block and the section around it: what the boundary has to hold.
+    if (el.classList.contains("hero-scope") || el.parentElement?.classList.contains("hero-scope")) return box(hero());
+    return box(0);
+  };
+};
+
+const renderInRoom = (room: number) => {
+  stubHero(room);
+  return render(
+    <div data-fit-boundary>
+      <Hero />
+    </div>,
+  );
+};
+
+describe("Hero in a terminal too short for it", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Element.prototype.getBoundingClientRect = realRect;
+    for (const prop of ["clientHeight", "scrollHeight"]) {
+      Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, value: 0 });
+    }
+  });
+
+  it("keeps all of itself where there is room for all of it", () => {
+    renderInRoom(ROW + CHROME + BIO_LINES * LINE);
+
+    expect(avatarShown()).toBe(true);
+    expect(bioOf()!.getAttribute("style")).toBeNull();
+    // The row's height is left to the class that reserves it, not overridden.
+    expect(rowOf()!.style.minHeight).toBe("");
+  });
+
+  it("gives up the avatar before it gives up a word of the bio", () => {
+    // One pixel short of the whole hero, which the avatar's slot covers 80 times
+    // over: the bio must not pay for it.
+    renderInRoom(ROW + CHROME + BIO_LINES * LINE - 1);
+
+    expect(avatarShown()).toBe(false);
+    expect(bioLinesShown()).toBe(BIO_LINES);
+    // And the slot closes with it, rather than leaving 80px of nothing behind.
+    expect(rowOf()!.style.minHeight).toBe("0px");
+  });
+
+  it("then gives up the bio a line at a time, so the links stay on the screen", () => {
+    // 20px left for the bio once the avatar has gone: two of its five lines.
+    renderInRoom(BANNER + CHROME + 2 * LINE);
+
+    expect(avatarShown()).toBe(false);
+    expect(bioOf()!.style.webkitLineClamp).toBe("2");
+    // Clamped, not cut: the ellipsis says there is more of it to read.
+    expect(bioOf()!.style.display).toBe("-webkit-box");
+  });
+
+  it("closes the bio rather than clamping it to a line that is not there", () => {
+    renderInRoom(BANNER + CHROME);
+
+    expect(bioLinesShown()).toBe(0);
+    expect(bioOf()!.style.height).toBe("0px");
+    // line-clamp counts from one, so a closed bio is closed by its height.
+    expect(bioOf()!.style.webkitLineClamp).toBe("");
+  });
+
+  it("keeps every part while there is no layout to measure", () => {
+    // jsdom on its own: no heights, no line height, nothing to count against.
+    render(
+      <div data-fit-boundary>
+        <Hero />
+      </div>,
+    );
+
+    expect(avatarShown()).toBe(true);
+    expect(bioOf()!.getAttribute("style")).toBeNull();
+  });
+});
