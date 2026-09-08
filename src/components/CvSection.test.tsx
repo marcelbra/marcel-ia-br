@@ -226,6 +226,49 @@ describe("CvSection in a short window", () => {
     expect(list.style.height).toBe("20px");
   });
 
+  it("turns pages sideways, by trackpad or by thumb", () => {
+    stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 }); // three of five fit
+    const { container } = render(<CvSection />);
+
+    const list = container.querySelector("ul")!;
+    const shown = () =>
+      [...list.children].flatMap((item, j) => (item.className.includes("invisible") ? [] : [j]));
+    const swipe = (dx: number, dy = 0) => {
+      fireEvent.touchStart(list, { touches: [{ clientX: 200, clientY: 100 }] });
+      fireEvent.touchEnd(list, { changedTouches: [{ clientX: 200 - dx, clientY: 100 - dy }] });
+    };
+
+    // A flick to the left goes on, the way it moves the page under your thumb.
+    swipe(60);
+    expect(shown()).toEqual([3, 4]);
+    swipe(-60);
+    expect(shown()).toEqual([0, 1, 2]);
+
+    // A trackpad sends one flick in pieces, and they add up to one turn.
+    fireEvent.wheel(list, { deltaX: 25, deltaY: 0 });
+    expect(shown()).toEqual([0, 1, 2]);
+    fireEvent.wheel(list, { deltaX: 25, deltaY: 0 });
+    expect(shown()).toEqual([3, 4]);
+  });
+
+  it("leaves a gesture that is more up-and-down than sideways to the stack", () => {
+    stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 });
+    const { container } = render(<CvSection />);
+
+    const list = container.querySelector("ul")!;
+    const shown = () =>
+      [...list.children].flatMap((item, j) => (item.className.includes("invisible") ? [] : [j]));
+
+    // The stack above reads these for its own up-and-down, so a swipe that is
+    // mostly vertical must not turn a page on the way past.
+    fireEvent.touchStart(list, { touches: [{ clientX: 200, clientY: 200 }] });
+    fireEvent.touchEnd(list, { changedTouches: [{ clientX: 160, clientY: 60 }] });
+    expect(shown()).toEqual([0, 1, 2]);
+
+    fireEvent.wheel(list, { deltaX: 50, deltaY: 80 });
+    expect(shown()).toEqual([0, 1, 2]);
+  });
+
   it("offers no pager while every bullet is showing", () => {
     stubLayout(1000, 5, { height: 300, chrome: 100, itemHeight: 20 });
     render(<CvSection />);
