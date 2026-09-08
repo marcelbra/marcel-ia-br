@@ -51,21 +51,29 @@ describe("turning the pages of a stack", () => {
     expect(stack.scrollTop).toBe(PAGE_H);
   });
 
-  it("lets a wheel's page land before it takes the next one", () => {
+  it("turns a page per notch of a spin, without waiting for each to land", () => {
+    const stack = mount();
+
+    // Three notches inside the time one page takes to travel: a reader who
+    // spins the wheel wants to get somewhere, and the pages follow at the
+    // same unhurried speed rather than queueing behind one another.
+    flick(stack, 120);
+    settle(160);
+    flick(stack, 120);
+    settle(160);
+    flick(stack, 120);
+    settle(400);
+    expect(stack.scrollTop).toBe(PAGE_H * 3);
+  });
+
+  it("counts one notch, not the burst a single detent can arrive as", () => {
     const stack = mount();
 
     flick(stack, 120);
-    // A notch arriving mid-travel is a spin, not a second reading of the
-    // page: at swipe speed the stack runs away from whoever is turning it.
-    settle(150);
+    settle(40);
     flick(stack, 120);
-    settle(320);
+    settle(400);
     expect(stack.scrollTop).toBe(PAGE_H);
-
-    // Once it has landed, the next notch turns the next page.
-    flick(stack, 120);
-    settle(320);
-    expect(stack.scrollTop).toBe(PAGE_H * 2);
   });
 
   it("takes the second of two quick swipes instead of swallowing it", () => {
