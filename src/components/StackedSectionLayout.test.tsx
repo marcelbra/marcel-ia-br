@@ -65,3 +65,46 @@ describe.each(["marcel", "writing"] as const)("the %s section", (name) => {
     anchoredTopLeft(content);
   });
 });
+
+// The window is nearly always bigger than one section's output, so the space
+// under it is the normal case, not an edge case. A prompt at the end of the
+// output is what makes that space read as a terminal waiting for the next
+// command rather than as a page that stopped early.
+describe("the space under a section's output", () => {
+  it.each([
+    ["CV", CvSection],
+    ["academics", AcademicsSection],
+  ] as const)("ends every %s page in a prompt", (_name, Section) => {
+    const { container } = render(<Section />);
+    for (const page of container.firstElementChild!.children) {
+      expect(page.querySelectorAll('[data-testid="waiting-prompt"]')).toHaveLength(1);
+    }
+  });
+
+  it.each([
+    ["CV", CvSection],
+    ["academics", AcademicsSection],
+  ] as const)("keeps the %s prompt in the leftover space, never in the output", (_name, Section) => {
+    const { container } = render(<Section />);
+    for (const page of container.firstElementChild!.children) {
+      const prompt = page.querySelector('[data-testid="waiting-prompt"]')!;
+      // Its box is only what the output left over, so a window too short for
+      // the output gives it nothing: it can neither push the card past the
+      // fold nor cost the card a line of its own.
+      expect(prompt.parentElement).toHaveClass("flex-1", "min-h-0", "overflow-hidden");
+      expect(page.firstElementChild!.contains(prompt)).toBe(false);
+    }
+  });
+
+  it.each(["marcel", "writing"] as const)("ends the %s section in a prompt", (name) => {
+    sessionStorage.clear();
+    const { getByTestId, getByRole } = render(
+      <MemoryRouter>
+        <Index />
+      </MemoryRouter>,
+    );
+    if (name === "writing") fireEvent.click(getByRole("button", { name: /writing/i }));
+
+    expect(getByTestId("terminal-body").querySelectorAll('[data-testid="waiting-prompt"]')).toHaveLength(1);
+  });
+});

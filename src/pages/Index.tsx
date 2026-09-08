@@ -7,6 +7,7 @@ import AcademicsSection from "@/components/AcademicsSection";
 import WritingPostCard from "@/components/WritingPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
+import WaitingPrompt from "@/components/WaitingPrompt";
 import { posts } from "@/pages/Writing";
 import { useState } from "react";
 
@@ -55,6 +56,9 @@ const Index = () => {
             )}
             <Hero />
           </div>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'flex-1 min-h-0 overflow-hidden'}`}>
+            <WaitingPrompt />
+          </div>
         </section>
       );
     }
@@ -93,6 +97,9 @@ const Index = () => {
                 Read all posts →
               </button>
             )}
+          </div>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'flex-1 min-h-0 overflow-hidden'}`}>
+            <WaitingPrompt />
           </div>
         </section>
       );
