@@ -323,9 +323,9 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
    * full page in a single frame, which reads as the page having jumped rather
    * than as the window having grown.
    *
-   * It stretches down the page and not across it, because fullscreen keeps the
-   * column the window already sits in: a stretch sideways would only have to
-   * snap back the moment the view changed.
+   * It goes the whole way, every edge at once, into the same box a double-click
+   * on the title bar fills — and the bar itself is gone the moment it lands,
+   * because that is when the fullscreen view takes over.
    */
   const enterFullscreen = useCallback(() => {
     const reveal = () => (onFullscreen ? onFullscreen() : setFullscreen(true));
@@ -338,18 +338,15 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     if (stretchingRef.current) return;
 
     const rect = el.getBoundingClientRect();
-    const base = origin(rect);
     const b = bounds();
-    const box = { left: rect.left, top: b.top, w: rect.width, h: b.bottom - b.top };
 
     stretchingRef.current = true;
     beforeStretchRef.current = { offset: offsetRef.current, size: sizeRef.current };
-    const ms = zoomMs(rect, box);
+    const ms = zoomMs(rect, { left: b.left, top: b.top, w: b.right - b.left, h: b.bottom - b.top });
     startAnim(ms);
-    setOffset({ x: box.left - base.left, y: box.top - base.top });
-    setSize({ w: box.w, h: box.h });
+    fillBounds();
     stretchTimer.current = setTimeout(reveal, ms);
-  }, [onFullscreen]);
+  }, [onFullscreen, fillBounds]);
 
   /** Put the window back in the box it stretched out of. */
   const leaveFullscreen = useCallback(() => {

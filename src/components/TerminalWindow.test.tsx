@@ -215,19 +215,13 @@ describe("TerminalWindow", () => {
     // window for a full page in one frame reads as the page having jumped.
     expect(onFullscreen).not.toHaveBeenCalled();
     expect(win.className).toMatch(/transition-/);
-    // The same 0.2s per 150px as the zoom, floored: the height has 92px to
-    // travel here, 560 -> 652, which is under the 160ms floor.
-    expect(win.style.transitionDuration).toBe("160ms");
-    // Down the page, not across it — fullscreen keeps the same column, so a
-    // stretch sideways would only have to snap back.
-    expect(rect(win)).toMatchObject({
-      left: BASE.left,
-      top: HEADER_BOTTOM,
-      width: NATURAL.w,
-      height: FOOTER_TOP - HEADER_BOTTOM,
-    });
+    // The same 0.2s per 150px as the zoom: the width moves furthest here,
+    // 800 -> 1024, so 224px at 1.333ms/px.
+    expect(win.style.transitionDuration).toBe("299ms");
+    // Every edge at once, into the box a double-click on the title bar fills.
+    expect(rect(win)).toMatchObject({ left: 0, top: HEADER_BOTTOM, right: VIEW_W, bottom: FOOTER_TOP });
 
-    act(() => vi.advanceTimersByTime(160));
+    act(() => vi.advanceTimersByTime(299));
     expect(onFullscreen).toHaveBeenCalledTimes(1);
   });
 
