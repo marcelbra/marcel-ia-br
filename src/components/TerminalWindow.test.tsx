@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { act, render, screen, fireEvent, cleanup } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import TerminalWindow from "./TerminalWindow";
 
 const VIEW_W = window.innerWidth;
@@ -42,14 +43,14 @@ const layoutTerminal = function (this: Element) {
   return { left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({}) } as DOMRect;
 };
 
-const setup = () => {
+const setup = (props: Partial<ComponentProps<typeof TerminalWindow>> = {}) => {
   const header = document.createElement("header");
   const footer = document.createElement("footer");
   fixedRect(header, { left: 0, top: 0, right: VIEW_W, bottom: HEADER_BOTTOM });
   fixedRect(footer, { left: 0, top: FOOTER_TOP, right: VIEW_W, bottom: VIEW_H });
   document.body.append(header, footer);
 
-  render(<TerminalWindow title="~/marcel">body</TerminalWindow>);
+  render(<TerminalWindow title="~/marcel" {...props}>body</TerminalWindow>);
   return screen.getByTestId("terminal-window");
 };
 
@@ -112,6 +113,7 @@ describe("TerminalWindow", () => {
     Element.prototype.getBoundingClientRect = layoutTerminal;
   });
   afterEach(() => {
+    vi.useRealTimers();
     Element.prototype.getBoundingClientRect = nativeRect;
     document.querySelectorAll("header, footer").forEach((el) => el.remove());
   });
@@ -200,6 +202,78 @@ describe("TerminalWindow", () => {
     const short = parseInt(win.style.transitionDuration, 10);
     expect(short).toBeLessThan(299);
     expect(short).toBeGreaterThanOrEqual(160);
+  });
+
+  it("stretches into the space fullscreen will take before handing over to it", () => {
+    vi.useFakeTimers();
+    const onFullscreen = vi.fn();
+    const win = setup({ onFullscreen });
+
+    fireEvent.click(screen.getByLabelText("Enter fullscreen"));
+
+    // The window is on its way and nothing has changed hands yet: swapping a
+    // window for a full page in one frame reads as the page having jumped.
+    expect(onFullscreen).not.toHaveBeenCalled();
+    expect(win.className).toMatch(/transition-/);
+    // The same 0.2s per 150px as the zoom, floored: the height has 92px to
+    // travel here, 560 -> 652, which is under the 160ms floor.
+    expect(win.style.transitionDuration).toBe("160ms");
+    // Down the page, not across it — fullscreen keeps the same column, so a
+    // stretch sideways would only have to snap back.
+    expect(rect(win)).toMatchObject({
+      left: BASE.left,
+      top: HEADER_BOTTOM,
+      width: NATURAL.w,
+      height: FOOTER_TOP - HEADER_BOTTOM,
+    });
+
+    act(() => vi.advanceTimersByTime(160));
+    expect(onFullscreen).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not remember the stretch, so what comes back is the window that left", () => {
+    vi.useFakeTimers();
+    setup({ onFullscreen: vi.fn() });
+    const geometry = [sessionStorage.getItem("terminal-offset"), sessionStorage.getItem("terminal-size")];
+    expect(JSON.parse(geometry[1]!)).toMatchObject({ w: NATURAL.w, h: NATURAL.h });
+
+    fireEvent.click(screen.getByLabelText("Enter fullscreen"));
+    act(() => vi.runAllTimers());
+
+    // The page throws the window away on the way into fullscreen and mounts a
+    // fresh one on the way out; it reads its geometry back from here.
+    expect([sessionStorage.getItem("terminal-offset"), sessionStorage.getItem("terminal-size")]).toEqual(geometry);
+  });
+
+  it("shows its own fullscreen view only once the stretch is over, and hands the window back after", () => {
+    vi.useFakeTimers();
+    setup();
+
+    fireEvent.click(screen.getByLabelText("Enter fullscreen"));
+    expect(screen.queryByLabelText("Exit fullscreen")).toBeNull();
+
+    act(() => vi.runAllTimers());
+    expect(screen.getByLabelText("Exit fullscreen")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Exit fullscreen"));
+    expect(rect(screen.getByTestId("terminal-window"))).toMatchObject({
+      left: BASE.left,
+      top: BASE.top,
+      width: NATURAL.w,
+      height: NATURAL.h,
+    });
+  });
+
+  it("leaves the button dead where the section has no fullscreen to go to", () => {
+    vi.useFakeTimers();
+    const onFullscreen = vi.fn();
+    const win = setup({ onFullscreen, disableFullscreen: true });
+    const before = rect(win);
+
+    expect(screen.queryByLabelText("Enter fullscreen")).toBeNull();
+    act(() => vi.runAllTimers());
+    expect(onFullscreen).not.toHaveBeenCalled();
+    expect(rect(win)).toMatchObject({ left: before.left, top: before.top, height: before.height });
   });
 
   it("resizes from every side, moving only the edge that was grabbed", () => {

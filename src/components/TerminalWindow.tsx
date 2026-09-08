@@ -137,6 +137,11 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
   const containerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const animTimer = useRef<ReturnType<typeof setTimeout>>();
+  // Set while the window is stretching into fullscreen, and the geometry it had
+  // before it set off — the stretch is a journey, not a resting place.
+  const stretchingRef = useRef(false);
+  const stretchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const beforeStretchRef = useRef<Geometry | null>(null);
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
   const sizeRef = useRef(size);
@@ -172,7 +177,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     return () => clearInterval(interval);
   }, [booting]);
 
-  useEffect(() => () => clearTimeout(animTimer.current), []);
+  useEffect(() => () => { clearTimeout(animTimer.current); clearTimeout(stretchTimer.current); }, []);
 
   const startAnim = (ms: number) => {
     setAnimMs(ms);
@@ -311,6 +316,52 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     fillBounds();
   }, [restore, offset, size, fillBounds]);
 
+  /**
+   * The green button, timed the way AppKit works one: the window stretches into
+   * the space fullscreen is about to take, and the fullscreen view only takes
+   * over once it has arrived there. Going straight over swaps a window for a
+   * full page in a single frame, which reads as the page having jumped rather
+   * than as the window having grown.
+   *
+   * It stretches down the page and not across it, because fullscreen keeps the
+   * column the window already sits in: a stretch sideways would only have to
+   * snap back the moment the view changed.
+   */
+  const enterFullscreen = useCallback(() => {
+    const reveal = () => (onFullscreen ? onFullscreen() : setFullscreen(true));
+    const el = containerRef.current;
+    if (!el) {
+      reveal();
+      return;
+    }
+    // A second press while the window is still on its way changes nothing.
+    if (stretchingRef.current) return;
+
+    const rect = el.getBoundingClientRect();
+    const base = origin(rect);
+    const b = bounds();
+    const box = { left: rect.left, top: b.top, w: rect.width, h: b.bottom - b.top };
+
+    stretchingRef.current = true;
+    beforeStretchRef.current = { offset: offsetRef.current, size: sizeRef.current };
+    const ms = zoomMs(rect, box);
+    startAnim(ms);
+    setOffset({ x: box.left - base.left, y: box.top - base.top });
+    setSize({ w: box.w, h: box.h });
+    stretchTimer.current = setTimeout(reveal, ms);
+  }, [onFullscreen]);
+
+  /** Put the window back in the box it stretched out of. */
+  const leaveFullscreen = useCallback(() => {
+    setFullscreen(false);
+    const before = beforeStretchRef.current;
+    if (!before) return;
+    setOffset(before.offset);
+    setSize(before.size);
+    beforeStretchRef.current = null;
+    stretchingRef.current = false;
+  }, []);
+
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.group\\/btns')) return;
     toggleZoom();
@@ -431,8 +482,8 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
     };
   }, []);
 
-  useEffect(() => { writeJSON(STORAGE_KEY, offset); }, [offset]);
-  useEffect(() => { writeJSON(SIZE_KEY, size); }, [size]);
+  useEffect(() => { if (!stretchingRef.current) writeJSON(STORAGE_KEY, offset); }, [offset]);
+  useEffect(() => { if (!stretchingRef.current) writeJSON(SIZE_KEY, size); }, [size]);
   useEffect(() => { writeJSON(ZOOM_KEY, restore); }, [restore]);
 
   if (closed) {
@@ -485,7 +536,7 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
       <div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">
         {/* Close button */}
         <button
-          onClick={() => setFullscreen(false)}
+          onClick={leaveFullscreen}
           className="fixed top-4 left-4 z-[10000] w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Exit fullscreen"
         >
@@ -530,7 +581,8 @@ const TerminalWindow = ({ title = "~/marcel — zsh — 122×37", children, onMi
             <svg className="w-2 h-2 opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><path d="M2 6h8"/></svg>
           </span>
           <span
-            onClick={() => { if (!disableFullscreen) { if (onFullscreen) onFullscreen(); else setFullscreen(true); } }}
+            onClick={() => { if (!disableFullscreen) enterFullscreen(); }}
+            aria-label={disableFullscreen ? undefined : "Enter fullscreen"}
             className={`w-3 h-3 rounded-full transition-colors cursor-default relative flex items-center justify-center ${disableFullscreen ? 'bg-[hsl(0,0%,30%)]' : 'bg-[hsl(140,60%,48%)] group-hover/btns:bg-[hsl(140,60%,58%)]'}`}
           >
             {!disableFullscreen && <svg className="w-[7px] h-[7px] opacity-0 group-hover/btns:opacity-100 transition-opacity" viewBox="0 0 12 12" fill="none" stroke="hsl(0,0%,20%)" strokeWidth="2"><polygon points="3,1 10,6 3,11"/></svg>}

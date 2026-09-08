@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Index from "./Index";
 
@@ -15,12 +15,18 @@ const main = (container: HTMLElement) => within(container).getByRole("main");
 
 /** The green traffic light, which expands the section it is showing. */
 const expand = () => {
-  const lights = screen.getByTestId("terminal-window").querySelectorAll(".group\\/btns > span");
-  fireEvent.click(lights[2]);
+  fireEvent.click(screen.getByLabelText("Enter fullscreen"));
+  // The window stretches into the space first and the page only changes hands
+  // once it has arrived, so nothing here is true until the stretch is over.
+  act(() => vi.advanceTimersByTime(500));
 };
 
 describe("the page the terminal sits on", () => {
-  beforeEach(() => sessionStorage.clear());
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
 
   it("is exactly as tall as the visible viewport, so it never scrolls", () => {
     const { container } = renderPage();
