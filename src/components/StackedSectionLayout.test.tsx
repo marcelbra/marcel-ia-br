@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import CvSection from "./CvSection";
 import AcademicsSection from "./AcademicsSection";
@@ -63,5 +63,24 @@ describe.each(["marcel", "writing"] as const)("the %s section", (name) => {
     const content = getByTestId("terminal-body").querySelector("section > div")!;
     expect(content).toHaveClass("shrink-0");
     anchoredTopLeft(content);
+  });
+
+  it("holds it there when the window stretches out and fullscreen takes over", () => {
+    vi.useFakeTimers();
+    render(
+      <MemoryRouter>
+        <Index />
+      </MemoryRouter>,
+    );
+    if (name === "writing") fireEvent.click(screen.getByRole("button", { name: /writing/i }));
+
+    fireEvent.click(screen.getByLabelText("Enter fullscreen"));
+    act(() => vi.advanceTimersByTime(500));
+
+    // The window has just finished growing into this exact column. Centring the
+    // content here would slide it sideways at the very moment the view changes,
+    // which is the seam the stretch is there to close.
+    anchoredTopLeft(document.querySelector("main section > div")!);
+    vi.useRealTimers();
   });
 });
