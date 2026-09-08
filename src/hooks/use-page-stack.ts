@@ -1,41 +1,44 @@
 import { useCallback, useEffect, useRef } from "react";
 
 /**
- * How fast a page travels, and how soon the next one may start, per gesture.
- * The page is moved by hand rather than through scrollIntoView({ behavior:
- * "smooth" }), whose duration belongs to the browser and runs longer than
- * either of these.
+ * How closely the stack follows the page it has been asked for, per gesture.
+ * The page is chased rather than tweened: every frame closes the same share
+ * of whatever is left, so a page asked for mid-travel is simply a new mark to
+ * head for, and the stack bends towards it instead of restarting. Turning
+ * back is the same thing in the other direction, which is what makes a change
+ * of mind read as one movement rather than as a snap.
  *
- * The two differ because the gestures do, not because the machines do — a
- * laptop has a trackpad and may have a touchscreen too, so the input is what
- * this reads, never the browser or the system.
- *
- * A swipe is a hand on the page: it should keep up with the finger, and the
- * next swipe can start before the last has landed, which is what makes a
- * flick through the stack feel continuous. A wheel notch is a request rather
- * than a hand — at swipe speed the stack reads as running away from the
- * reader — so its page travels slower.
- *
- * How fast a page moves and how fast pages may follow one another are not the
- * same thing, though, and only the first is about the reading. Waiting for the
- * page to land before taking the next notch made the calm travel cost the
- * reader the ability to get anywhere quickly; a notch part-way through simply
- * retargets the travel from where the page has got to, and a spin then reads
- * as one continuous move across several pages at the same unhurried speed.
+ * The two gestures differ because the gestures do, not because the machines
+ * do — a laptop has a trackpad and may have a touchscreen too, so the input
+ * is what this reads, never the browser or the system. A swipe is a hand on
+ * the page and keeps up with the finger; a wheel notch is a request, and at
+ * the hand's speed the stack reads as running away from the reader.
  */
-const SWIPE = { travel: 180, gap: 120 };
-const WHEEL = { travel: 320, gap: 150 };
-const WHEEL_MIN = 5;
-const SWIPE_MIN = 30;
+const SWIPE_TAU_MS = 55;
+const WHEEL_TAU_MS = 80;
+/** Close enough to the mark to sit down on it. */
+const ARRIVED_PX = 0.5;
 /**
- * A trackpad keeps sending for up to a second after the fingers have left,
- * the delta decaying the whole way, and that tail must not turn one flick
- * into four pages. A quiet moment ends the burst; until then only a push back
- * at something like full strength counts as a new one — which is what a
- * second flick is, and what the even notches of a mouse wheel always are.
+ * A floor under the chase, so the last few pixels are covered rather than
+ * crawled: an exponential alone spends longer on them than on the whole of
+ * the rest, and the browser rounds a fraction of a pixel away to nothing.
  */
-const BURST_GAP_MS = 90;
-const BURST_TAIL = 0.85;
+const MIN_PX_PER_FRAME = 2.5;
+
+/**
+ * How far the wheel has to travel to turn a page. Distance rather than the
+ * count of events: a mouse sends one fat notch, a trackpad a stream of small
+ * ones, and a page per notch would make the same push mean wildly different
+ * things on the two of them.
+ */
+const WHEEL_STEP_PX = 60;
+/** Silence that ends a gesture: after it the next event starts a fresh one. */
+const GESTURE_GAP_MS = 120;
+/** A line and a page, for the wheels that count in those. */
+const LINE_PX = 16;
+const SWIPE_MIN_PX = 30;
+const SWIPE_GAP_MS = 120;
+const WHEEL_GAP_MS = 150;
 
 /** Where the page at `index` sits in the scroller, in pixels from the top. */
 const topOf = (container: HTMLElement, index: number) => {
@@ -43,6 +46,10 @@ const topOf = (container: HTMLElement, index: number) => {
   const first = container.children[0] as HTMLElement | undefined;
   return page && first ? page.offsetTop - first.offsetTop : 0;
 };
+
+/** What a wheel event means in pixels, whatever unit it counts in. */
+const wheelPx = (e: WheelEvent, pageHeight: number) =>
+  e.deltaMode === 1 ? e.deltaY * LINE_PX : e.deltaMode === 2 ? e.deltaY * pageHeight : e.deltaY;
 
 /**
  * A stack of full-height pages that a wheel or a swipe turns one at a time.
@@ -52,57 +59,105 @@ export function usePageStack<T extends HTMLElement>(count: number) {
   const containerRef = useRef<T>(null);
   const indexRef = useRef(0);
   const frameRef = useRef(0);
+  const tauRef = useRef(WHEEL_TAU_MS);
   const readyAtRef = useRef(0);
+  // The wheel gesture being read: when it last spoke, how hard, which way,
+  // how far it has pushed since the last page, and whether it has had one.
   const lastAtRef = useRef(0);
-  const peakRef = useRef(0);
+  const lastMagnitudeRef = useRef(0);
+  const directionRef = useRef(0);
+  const pushedRef = useRef(0);
+  const turnedRef = useRef(false);
 
-  const scrollToIndex = useCallback((index: number, travel: number) => {
+  const chase = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
-    const clamped = Math.max(0, Math.min(count - 1, index));
-    if (clamped === indexRef.current) return;
-    indexRef.current = clamped;
-
-    const from = container.scrollTop;
-    const distance = topOf(container, clamped) - from;
     cancelAnimationFrame(frameRef.current);
-    if (!distance) return;
+
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      container.scrollTop = from + distance;
+      container.scrollTop = topOf(container, indexRef.current);
       return;
     }
 
-    const start = performance.now();
+    // Held here rather than read back from the scroller, which rounds: a step
+    // smaller than the rounding would be lost, and the chase would stall a
+    // few pixels short of the mark and go on running for as long as the page
+    // was open.
+    let position = container.scrollTop;
+    let last = performance.now();
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / travel);
-      // Out-cubic: away from the mark at once, and settling rather than braking.
-      container.scrollTop = from + distance * (1 - (1 - t) ** 3);
-      if (t < 1) frameRef.current = requestAnimationFrame(tick);
+      const target = topOf(container, indexRef.current);
+      const remaining = target - position;
+      if (Math.abs(remaining) < ARRIVED_PX) {
+        container.scrollTop = target;
+        return;
+      }
+      // The same share of what is left every frame, so the speed falls away
+      // with the distance and a new mark mid-flight costs no discontinuity.
+      const share = Math.abs(remaining) * (1 - Math.exp(-(now - last) / tauRef.current));
+      position += Math.sign(remaining) * Math.min(Math.max(share, MIN_PX_PER_FRAME), Math.abs(remaining));
+      container.scrollTop = position;
+      last = now;
+      frameRef.current = requestAnimationFrame(tick);
     };
     frameRef.current = requestAnimationFrame(tick);
-  }, [count]);
+  }, []);
+
+  const goTo = useCallback((index: number, tau: number) => {
+    const clamped = Math.max(0, Math.min(count - 1, index));
+    if (clamped === indexRef.current) return;
+    indexRef.current = clamped;
+    tauRef.current = tau;
+    chase();
+  }, [chase, count]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const take = (direction: number, now: number, pace: { travel: number; gap: number }) => {
-      readyAtRef.current = now + pace.gap;
-      scrollToIndex(indexRef.current + direction, pace.travel);
-    };
-
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const now = performance.now();
-      const magnitude = Math.abs(e.deltaY);
-      const fresh = now - lastAtRef.current > BURST_GAP_MS;
-      lastAtRef.current = now;
-      peakRef.current = fresh ? magnitude : Math.max(peakRef.current, magnitude);
+      const delta = wheelPx(e, container.clientHeight);
+      const magnitude = Math.abs(delta);
+      if (!magnitude) return;
 
-      if (magnitude < WHEEL_MIN) return;
-      if (now < readyAtRef.current) return;
-      if (!fresh && magnitude < peakRef.current * BURST_TAIL) return;
-      take(e.deltaY > 0 ? 1 : -1, now, WHEEL);
+      const direction = Math.sign(delta);
+      const quiet = now - lastAtRef.current > GESTURE_GAP_MS;
+      // Nobody turns back inside one push, so the other way round is always a
+      // new gesture — and one that has waited for nothing and owes nothing to
+      // what came before it.
+      const turnedRound = direction !== directionRef.current;
+      if (quiet || turnedRound) {
+        pushedRef.current = 0;
+        turnedRef.current = false;
+        if (turnedRound) readyAtRef.current = 0;
+      }
+
+      // A trackpad keeps sending for about a second after the fingers have
+      // left, the delta decaying the whole way. Once this gesture has turned
+      // a page, a stream that is dying away is that tail rather than a push,
+      // and pushing again — or a wheel's notches, which never decay — reads
+      // as exactly what it is.
+      const dying = magnitude < lastMagnitudeRef.current;
+      lastAtRef.current = now;
+      lastMagnitudeRef.current = magnitude;
+      directionRef.current = direction;
+      if (turnedRef.current && dying) return;
+
+      pushedRef.current += delta;
+      if (Math.abs(pushedRef.current) < WHEEL_STEP_PX) return;
+      if (now < readyAtRef.current) {
+        // The push is not thrown away while the last page is still on its
+        // way, but it does not pile up into a backlog either.
+        pushedRef.current = direction * WHEEL_STEP_PX;
+        return;
+      }
+
+      pushedRef.current = 0;
+      turnedRef.current = true;
+      readyAtRef.current = now + WHEEL_GAP_MS;
+      goTo(indexRef.current + direction, WHEEL_TAU_MS);
     };
 
     let touchStartY = 0;
@@ -111,8 +166,9 @@ export function usePageStack<T extends HTMLElement>(count: number) {
       const now = performance.now();
       if (now < readyAtRef.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(diff) < SWIPE_MIN) return;
-      take(diff > 0 ? 1 : -1, now, SWIPE);
+      if (Math.abs(diff) < SWIPE_MIN_PX) return;
+      readyAtRef.current = now + SWIPE_GAP_MS;
+      goTo(indexRef.current + (diff > 0 ? 1 : -1), SWIPE_TAU_MS);
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -123,7 +179,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [scrollToIndex]);
+  }, [goTo]);
 
   useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
 

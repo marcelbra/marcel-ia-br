@@ -24,8 +24,8 @@ const mount = () => {
   return stack;
 };
 
-const flick = (stack: HTMLElement, deltaY: number) =>
-  act(() => void stack.dispatchEvent(new WheelEvent("wheel", { deltaY, cancelable: true })));
+const flick = (stack: HTMLElement, deltaY: number, deltaMode = 0) =>
+  act(() => void stack.dispatchEvent(new WheelEvent("wheel", { deltaY, deltaMode, cancelable: true })));
 
 const swipe = (stack: HTMLElement, distance: number) =>
   act(() => {
@@ -37,17 +37,18 @@ const swipe = (stack: HTMLElement, distance: number) =>
     stack.dispatchEvent(end);
   });
 
-const settle = (ms = 300) => act(() => void vi.advanceTimersByTime(ms));
+/** Long enough for the stack to have caught its mark and stopped. */
+const settle = (ms = 700) => act(() => void vi.advanceTimersByTime(ms));
 
 describe("turning the pages of a stack", () => {
   beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "performance", "Date"] }));
   afterEach(() => vi.useRealTimers());
 
-  it("turns one page per flick", () => {
+  it("turns one page per notch", () => {
     const stack = mount();
 
     flick(stack, 120);
-    settle(320);
+    settle();
     expect(stack.scrollTop).toBe(PAGE_H);
   });
 
@@ -62,30 +63,48 @@ describe("turning the pages of a stack", () => {
     flick(stack, 120);
     settle(160);
     flick(stack, 120);
-    settle(400);
+    settle();
     expect(stack.scrollTop).toBe(PAGE_H * 3);
   });
 
-  it("counts one notch, not the burst a single detent can arrive as", () => {
+  it("turns straight back round when the reader does", () => {
     const stack = mount();
 
     flick(stack, 120);
-    settle(40);
+    settle(160);
     flick(stack, 120);
-    settle(400);
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H * 2);
+
+    // Nobody turns back inside one push, so the other way round is a new
+    // gesture: it waits for nothing, and it is not the tail of the last one.
+    settle(40);
+    flick(stack, -120);
+    settle();
     expect(stack.scrollTop).toBe(PAGE_H);
   });
 
-  it("takes the second of two quick swipes instead of swallowing it", () => {
+  it("counts how far the wheel was pushed, not how many events it sent", () => {
     const stack = mount();
 
-    swipe(stack, 80);
-    // A hand on the page keeps up with the hand: the reader who swipes twice
-    // means two pages, not one page and a wait.
-    settle(150);
-    swipe(stack, 80);
-    settle(200);
-    expect(stack.scrollTop).toBe(PAGE_H * 2);
+    // A trackpad sends a stream of small deltas where a mouse sends one fat
+    // notch; the same push has to mean the same thing on both.
+    for (let i = 0; i < 3; i++) {
+      flick(stack, 25);
+      settle(20);
+    }
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H);
+  });
+
+  it("reads a wheel that counts in lines rather than pixels", () => {
+    const stack = mount();
+
+    // Firefox reports lines. Taken at face value the delta is a rounding
+    // error and the page never turns.
+    flick(stack, 4, 1);
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H);
   });
 
   it("reads a trackpad's decaying tail as the one flick it came from", () => {
@@ -97,20 +116,32 @@ describe("turning the pages of a stack", () => {
       flick(stack, delta);
       settle(16);
     }
-    settle(500);
+    settle();
     expect(stack.scrollTop).toBe(PAGE_H);
+  });
+
+  it("takes the second of two quick swipes instead of swallowing it", () => {
+    const stack = mount();
+
+    swipe(stack, 80);
+    // A hand on the page keeps up with the hand: the reader who swipes twice
+    // means two pages, not one page and a wait.
+    settle(150);
+    swipe(stack, 80);
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H * 2);
   });
 
   it("stops at the ends of the stack", () => {
     const stack = mount();
 
     flick(stack, -120);
-    settle(500);
+    settle();
     expect(stack.scrollTop).toBe(0);
 
     for (let i = 0; i < PAGES + 2; i++) {
       flick(stack, 120);
-      settle(500);
+      settle();
     }
     expect(stack.scrollTop).toBe(PAGE_H * (PAGES - 1));
   });
@@ -124,7 +155,7 @@ describe("turning the pages of a stack", () => {
     });
     const stack = mount();
     flick(stack, 120);
-    settle(320);
+    settle();
 
     // A resize leaves the stack scrolled to the old page height; the current
     // page has to be put back on its mark or the next one shows through.

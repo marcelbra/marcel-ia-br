@@ -393,7 +393,7 @@ describe("the stack of pages", () => {
     );
 
     act(() => void stack.dispatchEvent(new WheelEvent("wheel", { deltaY: 120, cancelable: true })));
-    act(() => void vi.advanceTimersByTime(320));
+    act(() => void vi.advanceTimersByTime(700));
 
     expect(stack.scrollTop).toBe(100);
     vi.useRealTimers();
