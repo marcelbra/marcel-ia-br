@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import EntryHeading from "@/components/EntryHeading";
 import WaitingPrompt from "@/components/WaitingPrompt";
 import technicoLogo from "@/assets/technico-logo.png";
 import goetheLogo from "@/assets/goethe-logo.png";
@@ -178,11 +179,8 @@ const AcademicsSection = () => {
             </div>
 
             <div className={`border ${entry.borderColor} rounded bg-card/50 p-5`}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                <h3 className="text-foreground font-medium text-lg">
-                  {entry.title} <span className={entry.color}>@ {entry.institution}</span>
-                </h3>
-                <div className="flex flex-col items-end gap-1">
+              <EntryHeading title={entry.title} at={entry.institution} color={entry.color} className="text-lg">
+                <div className="shrink-0 flex flex-col items-end gap-1">
                   <span className={`text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background relative ${entry.periodInfo ? 'group/main cursor-help' : ''}`}>
                     {entry.period}
                     {entry.periodInfo && (
@@ -208,7 +206,7 @@ const AcademicsSection = () => {
                     </span>
                   )}
                 </div>
-              </div>
+              </EntryHeading>
               <ul className="space-y-2">
                 {entry.bullets.map((bullet, j) => {
                   const prefix = typeof bullet === "string" ? undefined : bullet.prefix;
