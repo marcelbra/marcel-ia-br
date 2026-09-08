@@ -3,6 +3,7 @@ import avatar2 from "@/assets/avatar2.png";
 import avatar3 from "@/assets/avatar3.png";
 import avatar4 from "@/assets/avatar4.png";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { clampToLines, hideAvatar, useFittingHero } from "@/hooks/use-fitting-hero";
 
 const ALIEN_GLYPHS = "⟁⟐⟒⟓⟔⟗⟘⟙⟚⟛⟜⟝⟞⟟⏃⏁⏂⏣⏥⏦⎔⎊⏍▞▚◈◇◆⬡⬢⟠";
 
@@ -135,6 +136,18 @@ const Hero = () => {
   const { display: roleDisplay, scramble: roleScramble, unscramble: roleUnscramble } = useAlienText("ai and software engineer");
   const { display: nameDisplay, hop: nameHop, reset: nameReset } = useScriptHop("marcel braasch");
   const welcomeRef = useRef<HTMLPreElement>(null);
+  // On a screen with no room for all of the hero, the avatar goes first and
+  // the bio then gives up a line at a time, so that the links under it — the
+  // only thing here anyone has to reach — stay on the screen.
+  const blockRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const bioRef = useRef<HTMLParagraphElement>(null);
+  const fit = useFittingHero(() => ({
+    block: blockRef.current,
+    row: rowRef.current,
+    banner: welcomeRef.current,
+    bio: bioRef.current,
+  }));
   const [frameIndex, setFrameIndex] = useState(0);
   const [showBubble, setShowBubble] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -204,14 +217,19 @@ const Hero = () => {
 
   return (
     <section className="max-w-3xl mx-auto w-full hero-scope">
-      <div>
+      <div ref={blockRef}>
         {/* Sized against the terminal window via container queries (see .hero-scope
             in index.css), so dragging the window's edge and resizing the browser do
             the same thing. The banner scales continuously; the avatar holds one size
             and disappears outright rather than shrinking, taking the row's reserved
             height with it (.hero-banner-row). The negative margin offsets the ~15%
             transparent padding under the feet, keeping them on the baseline. */}
-        <div className="hero-banner-row mb-8 flex items-end gap-6" aria-hidden="true">
+        <div
+          ref={rowRef}
+          style={{ minHeight: fit.avatar ? undefined : 0 }}
+          className="hero-banner-row mb-8 flex items-end gap-6"
+          aria-hidden="true"
+        >
           <pre
             ref={welcomeRef}
             onMouseEnter={handleWelcomeEnter}
@@ -224,7 +242,7 @@ const Hero = () => {
 ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
  ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
           `.trim()}</pre>
-          <div className="hero-avatar relative">
+          <div style={hideAvatar(fit.avatar)} className="hero-avatar relative">
             <img
               src={AVATAR_FRAMES[frameIndex]}
               alt="Marcel Braasch pixel avatar"
@@ -258,7 +276,11 @@ const Hero = () => {
           <span className="text-muted-foreground">:</span>{" "}
           <span className="cursor-default" onMouseEnter={() => { roleScramble(); handleWelcomeEnter(); }} onMouseLeave={() => roleUnscramble()}>{roleDisplay}</span>
         </p>
-        <p className="text-muted-foreground mb-6 max-w-2xl">
+        <p
+          ref={bioRef}
+          style={clampToLines(fit.lines)}
+          className="text-muted-foreground mb-6 max-w-2xl"
+        >
           <span className="text-hoodie-blue">bio</span>
           <span className="text-muted-foreground">:</span>{" "}
           <span className="text-foreground">

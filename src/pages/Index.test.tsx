@@ -40,6 +40,41 @@ describe("the page the terminal sits on", () => {
     expect(screen.getByTestId("terminal-body")).toHaveClass("overflow-y-auto", "overscroll-contain");
   });
 
+  it("gives a plain section a definite height to be fitted into", () => {
+    const { container } = renderPage();
+
+    // A section that only ever fills the room it is in cannot be measured
+    // against it — min-h-full grows with what it holds, and what it holds is
+    // then something to scroll to rather than something to fit. h-full is the
+    // room itself, and the marker is what the fitting hooks look up for it.
+    const section = container.querySelector("section")!;
+    expect(section).toHaveClass("h-full");
+    expect(section).not.toHaveClass("min-h-full");
+    expect(section).toHaveAttribute("data-fit-boundary");
+  });
+
+  it("shows the recent posts that fit and clips the rest away", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "writing" }));
+
+    // The list is cut to the cards there is room for rather than to a count:
+    // three fit on a laptop and one on a phone, and the rest are behind
+    // "Read all posts", which is a page that may scroll.
+    const list = screen.getByText("Read all posts →").previousElementSibling!;
+    expect(list).toHaveClass("overflow-hidden");
+    expect(list.children).toHaveLength(3);
+  });
+
+  it("expanded, hands the whole list back rather than the fitted one", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "writing" }));
+    fireEvent.click(screen.getByText("Read all posts →"));
+
+    // Nothing is fitted or clipped on a page that is allowed to be long.
+    expect(screen.queryByText("Read all posts →")).not.toBeInTheDocument();
+    expect(document.querySelector("section")).not.toHaveAttribute("data-fit-boundary");
+  });
+
   it("centres the terminal in the room it has, and clamps it to that room", () => {
     const { container } = renderPage();
     // min-h-0 is what makes the clamp real: without it the terminal would push

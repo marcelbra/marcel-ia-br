@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import EntryHeading from "@/components/EntryHeading";
+import PagedBullets from "@/components/PagedBullets";
+import { FIT_BOUNDARY } from "@/hooks/use-fitting-list";
 import technicoLogo from "@/assets/technico-logo.png";
 import goetheLogo from "@/assets/goethe-logo.png";
 import lmuLogo from "@/assets/lmu-logo.png";
@@ -167,17 +169,17 @@ const AcademicsSection = () => {
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {entries.map((entry, i) => (
-        <div key={i} className="h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full m-auto shrink-0">
-            <div className="flex items-center mb-6">
+        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="h-full flex flex-col overflow-hidden px-6 py-6">
+          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
+            <div className="flex items-center mb-6 shrink-0">
               <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
             </div>
 
-            <div className="mt-2 mb-4 text-muted-foreground">
+            <div className="mt-2 mb-4 shrink-0 text-muted-foreground">
               <span className={entry.color}>$</span> {entry.command ?? "cat degree.txt"}
             </div>
 
-            <div className={`border ${entry.borderColor} rounded bg-card/50 p-5`}>
+            <div className={`border ${entry.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
               <EntryHeading title={entry.title} at={entry.institution} color={entry.color} className="text-lg">
                 <div className="shrink-0 flex flex-col items-end gap-1">
                   <span className={`text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background relative ${entry.periodInfo ? 'group/main cursor-help' : ''}`}>
@@ -206,14 +208,20 @@ const AcademicsSection = () => {
                   )}
                 </div>
               </EntryHeading>
-              <ul className="space-y-2">
-                {entry.bullets.map((bullet, j) => {
+              <PagedBullets
+                total={entry.bullets.length}
+                color={entry.color}
+                className="space-y-2"
+                itemClassName="text-[12px] text-muted-foreground flex gap-2"
+              >
+                {(j) => {
+                  const bullet = entry.bullets[j];
                   const prefix = typeof bullet === "string" ? undefined : bullet.prefix;
                   const text = typeof bullet === "string" ? bullet : bullet.text;
                   const link = typeof bullet === "string" ? undefined : bullet.link;
                   const suffix = typeof bullet === "string" ? undefined : bullet.suffix;
                   return (
-                    <li key={j} className="text-[12px] text-muted-foreground flex gap-2">
+                    <>
                       <span className="text-ansi-yellow shrink-0">›</span>
                       {link ? (
                         <span>
@@ -222,10 +230,10 @@ const AcademicsSection = () => {
                       ) : (
                         <span className="whitespace-pre-line">{text}{suffix && <span className="text-lg leading-none">{suffix}</span>}</span>
                       )}
-                    </li>
+                    </>
                   );
-                })}
-              </ul>
+                }}
+              </PagedBullets>
             </div>
           </div>
         </div>
