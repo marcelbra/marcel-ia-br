@@ -7,7 +7,6 @@ import AcademicsSection from "@/components/AcademicsSection";
 import WritingPostCard from "@/components/WritingPostCard";
 import SectionHeading from "@/components/SectionHeading";
 import Footer from "@/components/Footer";
-import WaitingPrompt from "@/components/WaitingPrompt";
 import { posts } from "@/pages/Writing";
 import { useState } from "react";
 
@@ -45,7 +44,7 @@ const Index = () => {
       if (activeSection === "marcel") {
       return (
         <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
-          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'shrink-0'}`}>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
@@ -55,9 +54,6 @@ const Index = () => {
               </button>
             )}
             <Hero />
-          </div>
-          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'flex-1 min-h-0 overflow-hidden'}`}>
-            <WaitingPrompt />
           </div>
         </section>
       );
@@ -74,7 +70,7 @@ const Index = () => {
     if (activeSection === "writing") {
       return (
         <section className={`px-6 ${expanded ? 'pt-6' : 'py-6 min-h-full flex flex-col'}`}>
-          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'shrink-0'}`}>
+          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
             {expanded && (
               <button
                 onClick={() => setExpanded(false)}
@@ -97,9 +93,6 @@ const Index = () => {
                 Read all posts →
               </button>
             )}
-          </div>
-          <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'flex-1 min-h-0 overflow-hidden'}`}>
-            <WaitingPrompt />
           </div>
         </section>
       );
