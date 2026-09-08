@@ -14,10 +14,17 @@ import { useCallback, useEffect, useRef } from "react";
  * next swipe can start before the last has landed, which is what makes a
  * flick through the stack feel continuous. A wheel notch is a request rather
  * than a hand — at swipe speed the stack reads as running away from the
- * reader — so its page takes its time and lands before the next one is taken.
+ * reader — so its page travels slower.
+ *
+ * How fast a page moves and how fast pages may follow one another are not the
+ * same thing, though, and only the first is about the reading. Waiting for the
+ * page to land before taking the next notch made the calm travel cost the
+ * reader the ability to get anywhere quickly; a notch part-way through simply
+ * retargets the travel from where the page has got to, and a spin then reads
+ * as one continuous move across several pages at the same unhurried speed.
  */
 const SWIPE = { travel: 180, gap: 120 };
-const WHEEL = { travel: 300, gap: 420 };
+const WHEEL = { travel: 320, gap: 150 };
 const WHEEL_MIN = 5;
 const SWIPE_MIN = 30;
 /**
