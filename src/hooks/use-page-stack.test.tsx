@@ -27,28 +27,63 @@ const mount = () => {
 const flick = (stack: HTMLElement, deltaY: number) =>
   act(() => void stack.dispatchEvent(new WheelEvent("wheel", { deltaY, cancelable: true })));
 
+const swipe = (stack: HTMLElement, distance: number) =>
+  act(() => {
+    const start = new Event("touchstart") as Event & { touches: { clientY: number }[] };
+    start.touches = [{ clientY: 400 }];
+    stack.dispatchEvent(start);
+    const end = new Event("touchend") as Event & { changedTouches: { clientY: number }[] };
+    end.changedTouches = [{ clientY: 400 - distance }];
+    stack.dispatchEvent(end);
+  });
+
 const settle = (ms = 300) => act(() => void vi.advanceTimersByTime(ms));
 
 describe("turning the pages of a stack", () => {
   beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "performance", "Date"] }));
   afterEach(() => vi.useRealTimers());
 
-  it("turns one page per flick, and gets there inside 200ms", () => {
+  it("turns one page per flick", () => {
     const stack = mount();
 
     flick(stack, 120);
-    settle(200);
+    settle(320);
     expect(stack.scrollTop).toBe(PAGE_H);
   });
 
-  it("takes the second of two quick flicks instead of swallowing it", () => {
+  it("turns a page per notch of a spin, without waiting for each to land", () => {
+    const stack = mount();
+
+    // Three notches inside the time one page takes to travel: a reader who
+    // spins the wheel wants to get somewhere, and the pages follow at the
+    // same unhurried speed rather than queueing behind one another.
+    flick(stack, 120);
+    settle(160);
+    flick(stack, 120);
+    settle(160);
+    flick(stack, 120);
+    settle(400);
+    expect(stack.scrollTop).toBe(PAGE_H * 3);
+  });
+
+  it("counts one notch, not the burst a single detent can arrive as", () => {
     const stack = mount();
 
     flick(stack, 120);
-    // Far sooner than a page used to be allowed to turn: the reader who
-    // scrolls twice in a second means two pages, not one page and a wait.
-    settle(120);
+    settle(40);
     flick(stack, 120);
+    settle(400);
+    expect(stack.scrollTop).toBe(PAGE_H);
+  });
+
+  it("takes the second of two quick swipes instead of swallowing it", () => {
+    const stack = mount();
+
+    swipe(stack, 80);
+    // A hand on the page keeps up with the hand: the reader who swipes twice
+    // means two pages, not one page and a wait.
+    settle(150);
+    swipe(stack, 80);
     settle(200);
     expect(stack.scrollTop).toBe(PAGE_H * 2);
   });
@@ -62,7 +97,7 @@ describe("turning the pages of a stack", () => {
       flick(stack, delta);
       settle(16);
     }
-    settle(300);
+    settle(500);
     expect(stack.scrollTop).toBe(PAGE_H);
   });
 
@@ -70,12 +105,12 @@ describe("turning the pages of a stack", () => {
     const stack = mount();
 
     flick(stack, -120);
-    settle(200);
+    settle(500);
     expect(stack.scrollTop).toBe(0);
 
     for (let i = 0; i < PAGES + 2; i++) {
       flick(stack, 120);
-      settle(200);
+      settle(500);
     }
     expect(stack.scrollTop).toBe(PAGE_H * (PAGES - 1));
   });
@@ -89,7 +124,7 @@ describe("turning the pages of a stack", () => {
     });
     const stack = mount();
     flick(stack, 120);
-    settle(200);
+    settle(320);
 
     // A resize leaves the stack scrolled to the old page height; the current
     // page has to be put back on its mark or the next one shows through.

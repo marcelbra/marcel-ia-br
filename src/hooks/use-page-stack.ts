@@ -1,18 +1,30 @@
 import { useCallback, useEffect, useRef } from "react";
 
 /**
- * How long a page takes to travel. The page is moved by hand rather than
- * through scrollIntoView({ behavior: "smooth" }), whose duration belongs to
- * the browser and runs several times longer than this — long enough that the
- * stack felt like it was catching up with the reader rather than following.
+ * How fast a page travels, and how soon the next one may start, per gesture.
+ * The page is moved by hand rather than through scrollIntoView({ behavior:
+ * "smooth" }), whose duration belongs to the browser and runs longer than
+ * either of these.
+ *
+ * The two differ because the gestures do, not because the machines do — a
+ * laptop has a trackpad and may have a touchscreen too, so the input is what
+ * this reads, never the browser or the system.
+ *
+ * A swipe is a hand on the page: it should keep up with the finger, and the
+ * next swipe can start before the last has landed, which is what makes a
+ * flick through the stack feel continuous. A wheel notch is a request rather
+ * than a hand — at swipe speed the stack reads as running away from the
+ * reader — so its page travels slower.
+ *
+ * How fast a page moves and how fast pages may follow one another are not the
+ * same thing, though, and only the first is about the reading. Waiting for the
+ * page to land before taking the next notch made the calm travel cost the
+ * reader the ability to get anywhere quickly; a notch part-way through simply
+ * retargets the travel from where the page has got to, and a spin then reads
+ * as one continuous move across several pages at the same unhurried speed.
  */
-const TRAVEL_MS = 180;
-/**
- * A step is taken while the one before it is still settling: a second flick
- * retargets the travel from wherever the page has got to, so two quick flicks
- * turn two pages in one continuous move instead of one page and a wait.
- */
-const STEP_GAP_MS = 90;
+const SWIPE = { travel: 180, gap: 120 };
+const WHEEL = { travel: 320, gap: 150 };
 const WHEEL_MIN = 5;
 const SWIPE_MIN = 30;
 /**
@@ -44,7 +56,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
   const lastAtRef = useRef(0);
   const peakRef = useRef(0);
 
-  const scrollToIndex = useCallback((index: number) => {
+  const scrollToIndex = useCallback((index: number, travel: number) => {
     const container = containerRef.current;
     if (!container) return;
     const clamped = Math.max(0, Math.min(count - 1, index));
@@ -62,7 +74,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
 
     const start = performance.now();
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / TRAVEL_MS);
+      const t = Math.min(1, (now - start) / travel);
       // Out-cubic: away from the mark at once, and settling rather than braking.
       container.scrollTop = from + distance * (1 - (1 - t) ** 3);
       if (t < 1) frameRef.current = requestAnimationFrame(tick);
@@ -74,9 +86,9 @@ export function usePageStack<T extends HTMLElement>(count: number) {
     const container = containerRef.current;
     if (!container) return;
 
-    const take = (direction: number, now: number) => {
-      readyAtRef.current = now + STEP_GAP_MS;
-      scrollToIndex(indexRef.current + direction);
+    const take = (direction: number, now: number, pace: { travel: number; gap: number }) => {
+      readyAtRef.current = now + pace.gap;
+      scrollToIndex(indexRef.current + direction, pace.travel);
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -90,7 +102,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
       if (magnitude < WHEEL_MIN) return;
       if (now < readyAtRef.current) return;
       if (!fresh && magnitude < peakRef.current * BURST_TAIL) return;
-      take(e.deltaY > 0 ? 1 : -1, now);
+      take(e.deltaY > 0 ? 1 : -1, now, WHEEL);
     };
 
     let touchStartY = 0;
@@ -100,7 +112,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
       if (now < readyAtRef.current) return;
       const diff = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) < SWIPE_MIN) return;
-      take(diff > 0 ? 1 : -1, now);
+      take(diff > 0 ? 1 : -1, now, SWIPE);
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });

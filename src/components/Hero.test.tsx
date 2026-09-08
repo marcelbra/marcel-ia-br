@@ -27,6 +27,20 @@ describe("Hero banner row", () => {
 });
 
 describe("Hero avatar", () => {
+  it("cannot be marked or dragged off the page, but is still there", () => {
+    render(<Hero />);
+    const img = avatar();
+
+    // A drag across the hero used to pick the avatar up and mark it. It is out
+    // of the selection now — which is not the same as being gone: the picture
+    // still renders, and hovering it still wakes it.
+    expect(img.closest(".hero-avatar")).toHaveClass("select-none");
+    expect(img).toHaveAttribute("draggable", "false");
+    expect(img.getAttribute("src")).toBeTruthy();
+    // And it is never squeezed thinner to make room — it goes whole or not at all.
+    expect(img.closest(".hero-avatar")).toHaveClass("shrink-0");
+  });
+
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
