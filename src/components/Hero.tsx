@@ -9,6 +9,9 @@ const ALIEN_GLYPHS = "⟁⟐⟒⟓⟔⟗⟘⟙⟚⟛⟜⟝⟞⟟⏃⏁⏂⏣⏥�
 const AVATAR_FRAMES = [avatar1, avatar2, avatar3, avatar4];
 const AVATAR_FRAME_MS = 250;
 const AVATAR_HOLD_MS = 5000;
+// Long enough that the greeting reads as the page settling rather than as
+// something that came with the load, short enough to still be seen.
+const AVATAR_GREETING_MS = 3500;
 
 const useAlienText = (text: string) => {
   const [display, setDisplay] = useState(text);
@@ -190,6 +193,13 @@ const Hero = () => {
     }, AVATAR_FRAME_MS);
   }, [stopTimers]);
 
+  // He waves once on his own, so the greeting is not something you have to
+  // find by hovering — on a phone there is no hover to find it with.
+  useEffect(() => {
+    const greeting = setTimeout(handleWelcomeEnter, AVATAR_GREETING_MS);
+    return () => clearTimeout(greeting);
+  }, [handleWelcomeEnter]);
+
   useEffect(() => stopTimers, [stopTimers]);
 
   return (
@@ -222,7 +232,10 @@ const Hero = () => {
               onMouseEnter={handleWelcomeEnter}
             />
             {showBubble && (
-              <div className="absolute -top-3 -right-20 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-bl-none border-2 border-hoodie-blue shadow-[0_2px_12px_rgba(255,255,255,0.15)] whitespace-nowrap animate-fade-in">
+              // To the left of the avatar, where there is always room: the avatar
+              // sits at the end of the row, so a bubble on its right hangs off the
+              // window edge and a phone never sees it. The tail follows it over.
+              <div className="absolute -top-3 right-full mr-2 z-10 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-br-none border-2 border-hoodie-blue shadow-[0_2px_12px_rgba(255,255,255,0.15)] whitespace-nowrap animate-fade-in">
                 Hey there!
               </div>
             )}
