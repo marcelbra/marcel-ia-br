@@ -180,56 +180,62 @@ describe("CvSection in a short window", () => {
     expect(container.querySelector("ul")!.style.height).toBe("60px");
   });
 
-  it("steps the bullets it is holding back into view, one at a time", () => {
+  it("turns to the next page of bullets rather than sliding them up one", () => {
     stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 }); // three of five fit
     const { container } = render(<CvSection />);
 
     const shown = () =>
       [...container.querySelectorAll("ul")[0].children]
         .flatMap((item, j) => (item.className.includes("invisible") ? [] : [j]));
-    const [back] = screen.getAllByRole("button", { name: "Previous bullet" });
-    const [on] = screen.getAllByRole("button", { name: "Next bullet" });
+    const [back] = screen.getAllByRole("button", { name: "Previous bullets" });
+    const [on] = screen.getAllByRole("button", { name: "Next bullets" });
 
     // Flush against the top of the role, so there is nothing to go back to.
     expect(shown()).toEqual([0, 1, 2]);
     expect(back).toBeDisabled();
     expect(on).toBeEnabled();
 
-    // Each step moves the run on by one, rather than opening the role
-    // elsewhere or growing the card past the window.
+    // The next page begins where this one ran out — every bullet is read once,
+    // in one place, rather than sliding up through the card a line at a time.
     fireEvent.click(on);
-    expect(shown()).toEqual([1, 2, 3]);
+    expect(shown()).toEqual([3, 4]);
     expect(back).toBeEnabled();
-
-    fireEvent.click(on);
-    expect(shown()).toEqual([2, 3, 4]);
-    // The last bullet is showing, so there is nothing left that way either.
+    // Which is the whole role, so there is nothing left that way either.
     expect(on).toBeDisabled();
 
-    // And every step is retraceable.
-    fireEvent.click(back);
-    expect(shown()).toEqual([1, 2, 3]);
+    // And back to the page it came from, not to some line in between.
     fireEvent.click(back);
     expect(shown()).toEqual([0, 1, 2]);
     expect(back).toBeDisabled();
   });
 
-  it("keeps the card's border under the last bullet at every step", () => {
+  it("keeps the card's border under the last bullet of the page it is on", () => {
     stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 });
     const { container } = render(<CvSection />);
     const list = container.querySelector("ul")!;
 
     expect(list.style.height).toBe("60px");
-    fireEvent.click(screen.getAllByRole("button", { name: "Next bullet" })[0]);
-    expect(list.style.height).toBe("60px");
+    fireEvent.click(screen.getAllByRole("button", { name: "Next bullets" })[0]);
+    // Two bullets on the last page, so the border closes 20px higher.
+    expect(list.style.height).toBe("40px");
+  });
+
+  it("keeps a bullet showing in a window with room for none", () => {
+    // Five pixels of room, twenty to a bullet: nothing fits, and one shows.
+    stubLayout(1000, 5, { height: 200, chrome: 195, itemHeight: 20 });
+    const { container } = render(<CvSection />);
+
+    const [list] = container.querySelectorAll("ul");
+    expect([...list.children].filter((i) => !i.className.includes("invisible"))).toHaveLength(1);
+    expect(list.style.height).toBe("20px");
   });
 
   it("offers no pager while every bullet is showing", () => {
     stubLayout(1000, 5, { height: 300, chrome: 100, itemHeight: 20 });
     render(<CvSection />);
 
-    expect(screen.queryByRole("button", { name: "Next bullet" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Previous bullet" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Next bullets" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Previous bullets" })).toBeNull();
   });
 
   it("keeps every bullet, and the card its natural height, while there is room", () => {
