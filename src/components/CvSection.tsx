@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback, useEffect } from "react";
 import { useFitFontSize } from "@/hooks/use-fit-font-size";
 import { FIT_BOUNDARY } from "@/hooks/use-fitting-list";
+import { usePageStack } from "@/hooks/use-page-stack";
 import { splitLetters } from "@/lib/ascii";
 import EntryHeading from "@/components/EntryHeading";
 import PagedBullets from "@/components/PagedBullets";
@@ -299,66 +299,7 @@ const RoleCard = ({ exp }: { exp: Experience }) => (
 );
 
 const CvSection = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const currentIndexRef = useRef(0);
-  const lockedUntilRef = useRef(0);
-
-  const scrollToIndex = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(experiences.length - 1, index));
-    if (clamped === currentIndexRef.current) return;
-    currentIndexRef.current = clamped;
-    setCurrentIndex(clamped);
-    const container = containerRef.current;
-    if (!container) return;
-    container.children[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    lockedUntilRef.current = Date.now() + 1200;
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (Date.now() < lockedUntilRef.current) return;
-      if (Math.abs(e.deltaY) < 5) return;
-      scrollToIndex(currentIndexRef.current + (e.deltaY > 0 ? 1 : -1));
-    };
-
-    let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (Date.now() < lockedUntilRef.current) return;
-      const diff = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(diff) < 30) return;
-      scrollToIndex(currentIndexRef.current + (diff > 0 ? 1 : -1));
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd, { passive: true });
-    return () => {
-      container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [scrollToIndex]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || typeof ResizeObserver === "undefined") return;
-
-    // The stack is scrolled by pixels, so a resize leaves the current entry off
-    // its mark by however much the page height changed — and the entry next to
-    // it shows through the gap. Snap back to the current page instead.
-    const realign = () => {
-      container.children[currentIndexRef.current]?.scrollIntoView({ block: "start" });
-    };
-    const observer = new ResizeObserver(realign);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
+  const containerRef = usePageStack<HTMLDivElement>(experiences.length);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">

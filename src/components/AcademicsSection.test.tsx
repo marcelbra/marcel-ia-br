@@ -1,12 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import AcademicsSection from "./AcademicsSection";
 
 const realRect = Element.prototype.getBoundingClientRect;
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   Element.prototype.getBoundingClientRect = realRect;
   Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, value: 0 });
 });
@@ -84,30 +83,20 @@ describe("the stack of pages", () => {
     expect(screen.queryByRole("button", { name: "Next bullets" })).not.toBeInTheDocument();
   });
 
-  it("snaps back to the current page when the window is resized", () => {
-    const observed: Array<{ notify: () => void; el: Element }> = [];
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        constructor(private notify: () => void) {}
-        observe(el: Element) {
-          observed.push({ notify: this.notify, el });
-        }
-        disconnect() {}
-      },
+  it("turns its pages: a flick moves the stack to the next one", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "performance", "Date"] });
+    const { container } = render(<AcademicsSection />);
+    const stack = container.firstElementChild as HTMLElement;
+    // jsdom has no layout, so the pages are given the heights they would have.
+    [...stack.children].forEach((page, i) =>
+      Object.defineProperty(page, "offsetTop", { value: i * 100, configurable: true }),
     );
 
-    const { container } = render(<AcademicsSection />);
-    const stack = container.firstElementChild!;
-    const watcher = observed.find((o) => o.el === stack);
-    expect(watcher).toBeDefined();
+    act(() => void stack.dispatchEvent(new WheelEvent("wheel", { deltaY: 120, cancelable: true })));
+    act(() => void vi.advanceTimersByTime(200));
 
-    // A resize leaves the stack scrolled to the old page height; the current
-    // page has to be put back on its mark or the next one shows through.
-    watcher!.notify();
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+    expect(stack.scrollTop).toBe(100);
+    vi.useRealTimers();
   });
 });
 
