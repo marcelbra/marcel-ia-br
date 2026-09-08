@@ -23,20 +23,22 @@ describe.each([
   });
 });
 
-describe("what a page does with a window too short for it", () => {
-  it("keeps an academics entry at its own height and clips it at the fold", () => {
-    const { container } = render(<AcademicsSection />);
-    for (const page of container.firstElementChild!.children) {
-      expect(page.firstElementChild!).toHaveClass("shrink-0");
-    }
-  });
-
-  it("has a CV role give way instead, so its card closes inside the window", () => {
-    const { container } = render(<CvSection />);
+describe.each([
+  ["CV", CvSection],
+  ["academics", AcademicsSection],
+] as const)("a %s page in a window too short for it", (_name, Section) => {
+  it("has the entry give way, so its card closes inside the window", () => {
+    const { container } = render(<Section />);
     for (const page of container.firstElementChild!.children) {
       const content = page.firstElementChild!;
+      // shrink-0 would hold the entry at its own height and let the page clip
+      // it at the fold, which leaves the bullets past the edge unreadable —
+      // there is no scrolling to reach them with. Giving way is what lets the
+      // card close above the edge and hand the rest to the pager.
       expect(content).toHaveClass("min-h-0", "flex", "flex-col");
       expect(content).not.toHaveClass("shrink-0");
+      // And the page is the box the bullets are counted against.
+      expect(page).toHaveAttribute("data-fit-boundary");
     }
   });
 });
