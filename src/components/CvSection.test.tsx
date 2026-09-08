@@ -171,13 +171,20 @@ describe("CvSection in a short window", () => {
     expect(list.className).toContain("overflow-hidden");
   });
 
-  it("ends the card under the last bullet it kept, not in dead space", () => {
+  it("gives a paged role the whole room, so the card holds still as pages turn", () => {
+    // 70px left for the list, 20px to a bullet: three of five fit.
     stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 });
     const { container } = render(<CvSection />);
+    const list = container.querySelector("ul")!;
 
-    // Three bullets of 20px: the list is cut to them, so the border closes
-    // right below the third rather than around the two that went.
-    expect(container.querySelector("ul")!.style.height).toBe("60px");
+    // The box is the room, not the 60px the three bullets on this page happen
+    // to take. Sized to its own page, a last page holding fewer would pull the
+    // card's bottom up — and its top down with it, the card being centred in
+    // what it is given — so turning a page would move everything but the text.
+    expect(list.style.height).toBe("70px");
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Next bullets" })[0]);
+    expect(list.style.height).toBe("70px");
   });
 
   it("turns to the next page of bullets rather than sliding them up one", () => {
@@ -207,17 +214,6 @@ describe("CvSection in a short window", () => {
     fireEvent.click(back);
     expect(shown()).toEqual([0, 1, 2]);
     expect(back).toBeDisabled();
-  });
-
-  it("keeps the card's border under the last bullet of the page it is on", () => {
-    stubLayout(1000, 5, { height: 200, chrome: 130, itemHeight: 20 });
-    const { container } = render(<CvSection />);
-    const list = container.querySelector("ul")!;
-
-    expect(list.style.height).toBe("60px");
-    fireEvent.click(screen.getAllByRole("button", { name: "Next bullets" })[0]);
-    // Two bullets on the last page, so the border closes 20px higher.
-    expect(list.style.height).toBe("40px");
   });
 
   it("keeps a bullet showing in a window with room for none", () => {
