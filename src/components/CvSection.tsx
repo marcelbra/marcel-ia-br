@@ -273,20 +273,58 @@ const RoleIntro = ({ exp }: { exp: Experience }) => (
   </>
 );
 
+/** One step of the pager: greyed out where there is nothing that way. */
+const PagerArrow = ({ label, glyph, color, disabled, onClick }: {
+  label: string;
+  glyph: string;
+  color: string;
+  disabled: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    aria-label={label}
+    disabled={disabled}
+    onClick={onClick}
+    // Padded out to something a thumb can hit, and pulled back by the same
+    // amount so the row still starts flush with the bullets above it.
+    className={`px-3 py-1.5 -my-1.5 first:-ml-3 last:-mr-3 text-base leading-none transition-colors ${
+      disabled ? "text-muted-foreground/25 cursor-default" : `${color} hover:opacity-70`
+    }`}
+  >
+    {glyph}
+  </button>
+);
+
 /**
  * One role. Its text wraps like text anywhere else on the page, and the card
  * gives way to the window rather than growing out of it: the border always
  * closes above the bottom edge of the terminal, right under the last bullet
- * that fits. The ones past it go whole rather than being cut off mid-line —
- * and `onOpen` is how a reader gets to them: the card says how many it is
- * holding back and opens the role in full when asked.
+ * that fits. The ones past it go whole rather than being cut off mid-line.
  *
- * Away from a page of the stack there is no boundary above it, and the card
- * then simply shows everything it has.
+ * A reader gets to those with the pager underneath: it steps the run of
+ * bullets on by one and back by one, so every bullet can be reached without
+ * the card ever growing past the window. The arrow that has nothing left that
+ * way is greyed out, which is also how the card says where in the role you
+ * are — flush left, and you are at the top of it.
+ *
+ * Away from a page of the stack there is no boundary above it. Everything
+ * fits, and there is nothing to page through.
  */
-const RoleCard = ({ exp, onOpen }: { exp: Experience; onOpen?: () => void }) => {
-  const [listRef, visible, listHeight] = useFittingList<HTMLUListElement>(exp.bullets.length);
-  const held = exp.bullets.length - visible;
+const RoleCard = ({ exp }: { exp: Experience }) => {
+  const [from, setFrom] = useState(0);
+  const [listRef, visible, listHeight] = useFittingList<HTMLUListElement>(exp.bullets.length, from);
+  const back = from > 0;
+  const on = from + visible < exp.bullets.length;
+
+  // The run is brought into view by scrolling, which the layout does not feel:
+  // every bullet keeps the place the fit was measured at. offsetTop is read
+  // rather than the rect, so what is already scrolled cannot skew the next step.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const item = list?.children[from] as HTMLElement | undefined;
+    if (list && item) list.scrollTop = item.offsetTop - (list.children[0] as HTMLElement).offsetTop;
+  }, [from, visible, listHeight, listRef]);
 
   return (
     <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
@@ -299,20 +337,18 @@ const RoleCard = ({ exp, onOpen }: { exp: Experience; onOpen?: () => void }) => 
         {exp.bullets.map((bullet, j) => (
           <li
             key={j}
-            className={`cv-role-bullet text-muted-foreground flex items-start gap-2 ${j < visible ? "" : "invisible"}`}
+            className={`cv-role-bullet text-muted-foreground flex items-start gap-2 ${j >= from && j < from + visible ? "" : "invisible"}`}
           >
             <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />
             <span className="min-w-0 flex-1">{bullet.text}</span>
           </li>
         ))}
       </ul>
-      {held > 0 && onOpen && (
-        <button
-          onClick={onOpen}
-          className={`cv-role-bullet shrink-0 self-start pt-3 ${exp.color} hover:underline underline-offset-2`}
-        >
-          › +{held} more
-        </button>
+      {(back || on) && (
+        <div className="cv-role-bullet shrink-0 self-start flex items-center gap-1 pt-3">
+          <PagerArrow label="Previous bullet" glyph="←" color={exp.color} disabled={!back} onClick={() => setFrom(from - 1)} />
+          <PagerArrow label="Next bullet" glyph="→" color={exp.color} disabled={!on} onClick={() => setFrom(from + 1)} />
+        </div>
       )}
     </div>
   );
@@ -321,18 +357,8 @@ const RoleCard = ({ exp, onOpen }: { exp: Experience; onOpen?: () => void }) => 
 const CvSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  // Set to the role being read in full, on its own, outside the stack.
-  const [openRole, setOpenRole] = useState<number | null>(null);
-  const openRef = useRef<HTMLDivElement>(null);
   const currentIndexRef = useRef(0);
   const lockedUntilRef = useRef(0);
-
-  // A role opens at its beginning. The stack it came out of scrolls smoothly,
-  // and a scroll still running when the role opens would otherwise carry it
-  // straight past the first lines.
-  useLayoutEffect(() => {
-    if (openRole !== null && openRef.current) openRef.current.scrollTop = 0;
-  }, [openRole]);
 
   const scrollToIndex = useCallback((index: number) => {
     const clamped = Math.max(0, Math.min(experiences.length - 1, index));
@@ -373,7 +399,7 @@ const CvSection = () => {
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [scrollToIndex, openRole]);
+  }, [scrollToIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -385,31 +411,10 @@ const CvSection = () => {
     const realign = () => {
       container.children[currentIndexRef.current]?.scrollIntoView({ block: "start" });
     };
-    // Coming back from an opened role is the same problem: the stack is at the
-    // top again and the entry that was being read is somewhere below it.
-    if (currentIndexRef.current > 0) realign();
     const observer = new ResizeObserver(realign);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [openRole]);
-
-  if (openRole !== null) {
-    const exp = experiences[openRole];
-    return (
-      <div ref={openRef} className="cv-scope h-full overflow-y-auto px-6 py-6">
-        <div className="max-w-3xl w-full">
-          <button
-            onClick={() => setOpenRole(null)}
-            className="mb-4 font-mono text-sm text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-          >
-            ← back
-          </button>
-          <RoleIntro exp={exp} />
-          <RoleCard exp={exp} />
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
@@ -417,7 +422,7 @@ const CvSection = () => {
         <div key={i} {...{ [FIT_BOUNDARY]: true }} className="cv-scope h-full flex flex-col overflow-hidden px-6 py-6">
           <div className="max-w-3xl w-full min-h-0 flex flex-col">
             <RoleIntro exp={exp} />
-            <RoleCard exp={exp} onOpen={() => setOpenRole(i)} />
+            <RoleCard exp={exp} />
           </div>
         </div>
       ))}
