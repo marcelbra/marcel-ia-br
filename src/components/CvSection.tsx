@@ -339,13 +339,19 @@ const RoleCard = ({ exp }: { exp: Experience }) => {
     setStarts((current) => (current.length > page + 1 ? current.slice(0, page + 1) : current));
   }, [visible, page]);
 
-  // The page is brought into view by scrolling, which the layout does not feel:
-  // every bullet keeps the place the fit was measured at. offsetTop is read
-  // rather than the rect, so what is already scrolled cannot skew the next turn.
+  // How far the run has to be lifted for the page to start at the top of the
+  // box. Scrolling would be the obvious way to do it, but a box that is the
+  // whole room is taller than the last page's content and scrolling stops
+  // short of the last page, leaving it sitting along the bottom. A margin has
+  // no such limit. offsetTop is read rather than the rect: both ends move
+  // together with the margin, so the distance between them does not, and the
+  // measurement settles rather than chasing itself.
+  const [lift, setLift] = useState(0);
   useLayoutEffect(() => {
     const list = listRef.current;
     const item = list?.children[from] as HTMLElement | undefined;
-    if (list && item) list.scrollTop = item.offsetTop - (list.children[0] as HTMLElement).offsetTop;
+    const first = list?.children[0] as HTMLElement | undefined;
+    if (item && first) setLift(item.offsetTop - first.offsetTop);
   }, [from, visible, listHeight, listRef]);
 
   const turn = () => {
@@ -364,6 +370,7 @@ const RoleCard = ({ exp }: { exp: Experience }) => {
         {exp.bullets.map((bullet, j) => (
           <li
             key={j}
+            style={j === 0 ? { marginTop: -lift } : undefined}
             className={`cv-role-bullet text-muted-foreground flex items-start gap-2 ${j >= from && j < from + visible ? "" : "invisible"}`}
           >
             <PixelIcon name={bullet.icon} className={bullet.icon === "stack" ? "mt-[2px]" : "mt-[3px]"} />

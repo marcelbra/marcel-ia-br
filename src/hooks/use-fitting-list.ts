@@ -12,11 +12,16 @@ interface Fit {
 
 /**
  * Fit a list into the box marked with {@link FIT_BOUNDARY} above it: how many
- * of its items there is room for, counting from `from`, and the height that
- * shows those and no more. Items outside that run are the ones the box has no
- * room for — hide them with `visibility`, not `display`, and let the height
- * clip them away. Scroll the box to the item at `from` to bring the run into
- * view; `scrollTop` moves nothing in the layout, so it cannot disturb this.
+ * of its items there is room for, counting from `from`, and the height to give
+ * it. Items outside that run are the ones the box has no room for — hide them
+ * with `visibility`, not `display`, and let the height clip them away. Scroll
+ * the box to the item at `from` to bring the run into view; `scrollTop` moves
+ * nothing in the layout, so it cannot disturb this.
+ *
+ * A list that fits keeps its own height, and the box closes under its last
+ * item. A list that does not is one page of several and is given the whole of
+ * the room instead, which is the same on every page — so its box holds still
+ * as the pages turn.
  *
  * Keeping every item in the layout is what keeps the answer stable. What would
  * fit is measurable at every size; the room it is measured against is read as
@@ -80,8 +85,14 @@ export function useFittingList<T extends HTMLElement>(total: number, from = 0) {
       }
 
       // Only a list showing all of itself from the top may keep its own height.
+      // Any other list is one page of several, and takes the whole of the room
+      // rather than the height of what happens to be on it. The room is the
+      // same on every page, so the box around a paged list never changes size:
+      // turning a page moves the bullets and nothing else. Sized to its own
+      // page instead, a short last page would pull the card's bottom up — and
+      // its top down with it, the card being centred in what it is given.
       const whole = start === 0 && count === items.length;
-      const next: Fit = whole ? { count } : { count, height };
+      const next: Fit = whole ? { count } : { count, height: Math.max(room, height) };
       setFit((current) => (current.count === next.count && current.height === next.height ? current : next));
     };
 
