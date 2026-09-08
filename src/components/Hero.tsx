@@ -141,11 +141,13 @@ const Hero = () => {
   // only thing here anyone has to reach — stay on the screen.
   const blockRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const bioRef = useRef<HTMLParagraphElement>(null);
   const fit = useFittingHero(() => ({
     block: blockRef.current,
     row: rowRef.current,
     banner: welcomeRef.current,
+    body: bodyRef.current,
     bio: bioRef.current,
   }));
   const [frameIndex, setFrameIndex] = useState(0);
@@ -217,7 +219,9 @@ const Hero = () => {
 
   return (
     <section className="max-w-3xl mx-auto w-full hero-scope">
-      <div ref={blockRef}>
+      {/* Flat, the wordmark stands beside what it introduces rather than over
+          it: the height it was costing is height the rest did not have. */}
+      <div ref={blockRef} className="flat-wide:flex flat-wide:items-center flat-wide:gap-6">
         {/* Sized against the terminal window via container queries (see .hero-scope
             in index.css), so dragging the window's edge and resizing the browser do
             the same thing. The banner scales continuously; the avatar holds one size
@@ -227,7 +231,7 @@ const Hero = () => {
         <div
           ref={rowRef}
           style={{ minHeight: fit.avatar ? undefined : 0 }}
-          className="hero-banner-row mb-8 flex items-end gap-6"
+          className="hero-banner-row mb-8 flex items-end gap-6 flat:mb-0 flat:hidden flat-wide:flex flat-wide:w-[38%] flat-wide:shrink-0"
           aria-hidden="true"
         >
           <pre
@@ -264,44 +268,50 @@ const Hero = () => {
           </div>
         </div>
 
-        <div className="hero-prompt text-muted-foreground mb-6">
-          <span className="text-hoodie-blue">$</span> whoami
-        </div>
+        {/* The column beside the row once the window is flat, and under it
+            everywhere else. The hero-* classes are what the container query
+            sets the rhythm through; flat:mb-* closes it further where the
+            window is short and the container too wide for that query. */}
+        <div ref={bodyRef} className="flat-wide:min-w-0 flat-wide:flex-1">
+          <div className="hero-prompt text-muted-foreground mb-6 flat:mb-2">
+            <span className="text-hoodie-blue">$</span> whoami
+          </div>
 
-        <p className="hero-fact text-foreground mb-4">
-          <span className="text-hoodie-blue">name</span>
-          <span className="text-muted-foreground">:</span>{" "}
-          <span className="cursor-default">
-            marcel braasch
-          </span>
-        </p>
-        <p className="hero-fact text-foreground mb-4">
-          <span className="text-hoodie-blue">role</span>
-          <span className="text-muted-foreground">:</span>{" "}
-          <span className="cursor-default" onMouseEnter={() => { roleScramble(); handleWelcomeEnter(); }} onMouseLeave={() => roleUnscramble()}>{roleDisplay}</span>
-        </p>
-        <p
-          ref={bioRef}
-          style={clampToLines(fit.lines)}
-          className="hero-bio text-muted-foreground mb-6 max-w-2xl"
-        >
-          <span className="text-hoodie-blue">bio</span>
-          <span className="text-muted-foreground">:</span>{" "}
-          <span className="text-foreground">
-            bridging deep ML, DS, and SE expertise with customer obsession. I thrive in fast‑paced environments and love solving hard problems that truly matter.
-          </span>
-        </p>
+          <p className="hero-fact text-foreground mb-4 flat:mb-2">
+            <span className="text-hoodie-blue">name</span>
+            <span className="text-muted-foreground">:</span>{" "}
+            <span className="cursor-default">
+              marcel braasch
+            </span>
+          </p>
+          <p className="hero-fact text-foreground mb-4 flat:mb-2">
+            <span className="text-hoodie-blue">role</span>
+            <span className="text-muted-foreground">:</span>{" "}
+            <span className="cursor-default" onMouseEnter={() => { roleScramble(); handleWelcomeEnter(); }} onMouseLeave={() => roleUnscramble()}>{roleDisplay}</span>
+          </p>
+          <p
+            ref={bioRef}
+            style={clampToLines(fit.lines)}
+            className="hero-bio text-muted-foreground mb-6 max-w-2xl flat:mb-2"
+          >
+            <span className="text-hoodie-blue">bio</span>
+            <span className="text-muted-foreground">:</span>{" "}
+            <span className="text-foreground">
+              bridging deep ML, DS, and SE expertise with customer obsession. I thrive in fast‑paced environments and love solving hard problems that truly matter.
+            </span>
+          </p>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <a href="https://github.com/marcelbra" target="_blank" rel="noopener noreferrer" className="text-foreground group">
-            [<span className="group-hover:underline">github</span>]
-          </a>
-          <a href="https://www.linkedin.com/in/marcelbraasch/" target="_blank" rel="noopener noreferrer" className="text-ansi-blue group">
-            [<span className="group-hover:underline">linkedin</span>]
-          </a>
-          <a href="mailto:marcelbraasch@gmail.com" className="text-ansi-red group">
-            [<span className="group-hover:underline">email</span>]
-          </a>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <a href="https://github.com/marcelbra" target="_blank" rel="noopener noreferrer" className="text-foreground group">
+              [<span className="group-hover:underline">github</span>]
+            </a>
+            <a href="https://www.linkedin.com/in/marcelbraasch/" target="_blank" rel="noopener noreferrer" className="text-ansi-blue group">
+              [<span className="group-hover:underline">linkedin</span>]
+            </a>
+            <a href="mailto:marcelbraasch@gmail.com" className="text-ansi-red group">
+              [<span className="group-hover:underline">email</span>]
+            </a>
+          </div>
         </div>
       </div>
     </section>

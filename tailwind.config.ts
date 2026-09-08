@@ -14,6 +14,16 @@ export default {
       },
     },
     extend: {
+      // A window with no height to spare — a phone held sideways, or a terminal
+      // dragged flat. Height is what it has run out of; width is what it has
+      // going spare, which is why what introduces a section moves beside the
+      // content there rather than above it. Narrow and flat there is nowhere to
+      // move it to, and it goes instead: flat-wide comes after flat, so where
+      // both match the later one wins and puts it back.
+      screens: {
+        flat: { raw: "(max-height: 480px)" },
+        "flat-wide": { raw: "(max-height: 480px) and (min-width: 480px)" },
+      },
       fontFamily: {
         mono: ['JetBrains Mono', 'Courier New', 'monospace'],
       },

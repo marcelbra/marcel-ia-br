@@ -17,6 +17,8 @@ export interface HeroParts {
   row: HTMLElement | null;
   /** The banner, which is what the row is left with once the avatar goes. */
   banner: HTMLElement | null;
+  /** Everything under the row, which is the column beside it once it is one. */
+  body: HTMLElement | null;
   /** The bio, the one part here that can be read short. */
   bio: HTMLElement | null;
 }
@@ -37,6 +39,11 @@ const ALL: HeroFit = { avatar: true };
  * length, which stays readable as its scroll height however few of its lines
  * are shown. So the fit settles in one pass instead of chasing itself as the
  * two come and go.
+ *
+ * Where the row has moved beside the body rather than above it, none of its
+ * height is height the body has to share, and the avatar's slot costs nothing
+ * at all. Which of the two it is, is read off the layout rather than assumed:
+ * the row is above the body exactly while it ends before the body begins.
  *
  * Everything is kept while there is nothing to measure (no layout yet, jsdom),
  * so the hero is never cut on a guess.
@@ -61,10 +68,10 @@ export function useFittingHero(parts: () => HeroParts) {
 
     const measure = () => {
       if (!alive) return;
-      const { block, row, banner, bio } = read.current();
+      const { block, row, banner, body, bio } = read.current();
       const boundary = block?.closest<HTMLElement>(`[${FIT_BOUNDARY}]`);
       const lineHeight = bio ? parseFloat(getComputedStyle(bio).lineHeight) : 0;
-      if (!block || !row || !banner || !bio || !boundary?.clientHeight || !lineHeight) {
+      if (!block || !row || !banner || !body || !bio || !boundary?.clientHeight || !lineHeight) {
         setFit((current) => (current.avatar && current.lines === undefined ? current : ALL));
         return;
       }
@@ -79,16 +86,21 @@ export function useFittingHero(parts: () => HeroParts) {
       const inside = boundary.clientHeight - pad(style.paddingTop) - pad(style.paddingBottom);
       const room = inside - (height(outer) - height(block));
 
-      if (paying.current.avatar) slot.current = Math.max(0, height(row) - height(banner));
-      // The parts that never give way: the hero less the two that do.
-      const rest = height(block) - height(bio) - (paying.current.avatar ? slot.current : 0);
+      const stacked = row.getBoundingClientRect().bottom <= body.getBoundingClientRect().top + 0.5;
+      if (stacked && paying.current.avatar) slot.current = Math.max(0, height(row) - height(banner));
+      // What the avatar costs the body: the slot where the row is above it, and
+      // nothing at all where the row stands beside it.
+      const slotCost = stacked ? slot.current : 0;
+      // The parts that never give way: what shares the room with the bio, less
+      // the bio and less whatever the avatar is taking of it.
+      const rest = height(stacked ? block : body) - height(bio) - (paying.current.avatar ? slotCost : 0);
       const whole = bio.scrollHeight;
       const total = Math.round(whole / lineHeight);
 
       // Half a pixel of slack: a fractional layout must not cost a whole line,
       // nor the avatar its place.
-      const keepAvatar = rest + slot.current + whole <= room + 0.5;
-      const spare = room - rest - (keepAvatar ? slot.current : 0);
+      const keepAvatar = rest + slotCost + whole <= room + 0.5;
+      const spare = room - rest - (keepAvatar ? slotCost : 0);
       const fits = Math.max(0, Math.min(total, Math.floor((spare + 0.5) / lineHeight)));
       const next: HeroFit = { avatar: keepAvatar, lines: fits >= total ? undefined : fits };
       paying.current = next;
@@ -101,8 +113,10 @@ export function useFittingHero(parts: () => HeroParts) {
 
     if (typeof ResizeObserver === "undefined") return () => { alive = false; };
     const observer = new ResizeObserver(measure);
-    const { block, bio } = read.current();
+    const { block, body, row, bio } = read.current();
     if (block) observer.observe(block);
+    if (body) observer.observe(body);
+    if (row) observer.observe(row);
     if (bio) observer.observe(bio);
     const boundary = block?.closest(`[${FIT_BOUNDARY}]`);
     if (boundary) observer.observe(boundary);

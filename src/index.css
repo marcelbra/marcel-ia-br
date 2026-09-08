@@ -224,6 +224,30 @@
     }
   }
 
+  /* Standing beside the content, both of these are set in a column narrower
+     than the page their scale is read from — and type sized for the page wraps
+     into height a flat window has not got. Naming the column with the name the
+     scale asks for shadows the page for everything inside it, so each is set
+     against the width it is actually being set in. */
+  @media (max-height: 480px) and (min-width: 480px) {
+    .cv-body {
+      container-type: inline-size;
+      container-name: cv;
+    }
+
+    .hero-banner-row {
+      container-type: inline-size;
+      container-name: hero;
+    }
+
+    /* And with no avatar to leave room for there, the wordmark takes the whole
+       of its column — which is also why the avatar's own query, reading that
+       column now, finds it too narrow to earn a place. */
+    .hero-banner {
+      font-size: clamp(4px, 2.5cqw, 10px);
+    }
+  }
+
   /* The avatar never scales, so it is either beside the wordmark whole or not
      there at all. Whole needs 108px for it, 24px for the gap and 154px for the
      wordmark set as small as it goes — 286px, and the row is squeezed below

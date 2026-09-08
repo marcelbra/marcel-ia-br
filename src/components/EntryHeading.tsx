@@ -30,7 +30,7 @@ interface EntryHeadingProps {
  * else — which is the cascade, without a breakpoint anywhere in it.
  */
 const EntryHeading = ({ title, at, color, children, className = "" }: EntryHeadingProps) => (
-  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-4 shrink-0">
+  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-4 flat:mb-2 shrink-0">
     {/* The gap stands in for the space that used to sit between them, which a
         flex row would otherwise collapse. In em, so it tracks the type. */}
     <h3 className={`text-foreground font-medium flex flex-wrap items-baseline gap-x-[0.6em] ${className}`}>

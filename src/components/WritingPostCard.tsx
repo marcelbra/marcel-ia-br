@@ -15,7 +15,9 @@ const WritingPostCard = ({ title, excerpt, date, slug }: WritingPostCardProps) =
         </h3>
         <time className="text-xs text-muted-foreground shrink-0">{date}</time>
       </div>
-      <p className="text-sm text-muted-foreground pl-4">
+      {/* Flat, a post is its title and its date: the line under it is the
+          first thing worth the height it costs. */}
+      <p className="text-sm text-muted-foreground pl-4 flat:hidden">
         {excerpt}
       </p>
     </article>

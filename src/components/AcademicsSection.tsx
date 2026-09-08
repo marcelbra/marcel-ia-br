@@ -110,17 +110,25 @@ const AcademicsSection = () => {
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {entries.map((entry, i) => (
-        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
-            <div className="flex items-center mb-6 shrink-0">
-              <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
+        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="h-full flex flex-col overflow-hidden px-6 py-6 flat:py-3">
+          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col flat-wide:flex-row flat-wide:gap-6">
+            {/* Flat, these go. A degree's logo is a picture blown up to nine
+                times its box — sized for a row the width of the card, and far
+                too big for a column beside it — so unlike a role's wordmark it
+                has nowhere to stand. The card takes the whole window instead,
+                which is what stops its heading and its bullets wrapping into
+                the height that is not there. */}
+            <div className="shrink-0 flat:hidden">
+              <div className="flex items-center mb-6 flat:mb-3">
+                <img src={entry.logo} alt={`${entry.institution} logo`} className="w-14 h-14 object-contain pointer-events-none" style={{ transform: `scale(${entry.logoScale ?? 1}) translateY(${entry.logoOffset ?? 0}px)`, marginLeft: entry.logoMarginLeft ?? undefined }} />
+              </div>
+
+              <div className="mt-2 mb-4 flat:mb-0 text-muted-foreground">
+                <span className={entry.color}>$</span> {entry.command ?? "cat degree.txt"}
+              </div>
             </div>
 
-            <div className="mt-2 mb-4 shrink-0 text-muted-foreground">
-              <span className={entry.color}>$</span> {entry.command ?? "cat degree.txt"}
-            </div>
-
-            <div className={`border ${entry.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
+            <div className={`border ${entry.borderColor} rounded bg-card/50 p-5 flat:p-3 min-h-0 flex flex-col flat-wide:min-w-0 flat-wide:flex-1`}>
               <EntryHeading title={entry.title} at={entry.institution} color={entry.color} className="text-lg">
                 <div className="shrink-0 flex flex-col items-end gap-1">
                   <span className={`text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background relative ${entry.periodInfo ? 'group/main cursor-help' : ''}`}>

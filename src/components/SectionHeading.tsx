@@ -5,7 +5,7 @@ interface SectionHeadingProps {
 
 const SectionHeading = ({ label, title }: SectionHeadingProps) => {
   return (
-    <div className="mb-6">
+    <div className="mb-6 flat:mb-3">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-ansi-green">$</span>
         <span className="text-muted-foreground">ls</span>

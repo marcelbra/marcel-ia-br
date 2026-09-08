@@ -64,7 +64,7 @@ const Index = () => {
   const renderContent = () => {
       if (activeSection === "marcel") {
       return (
-        <section {...(expanded ? {} : { [FIT_BOUNDARY]: true })} className={`px-6 ${expanded ? 'pt-6' : 'py-6 h-full flex flex-col'}`}>
+        <section {...(expanded ? {} : { [FIT_BOUNDARY]: true })} className={`px-6 ${expanded ? 'pt-6' : 'py-6 flat:py-3 h-full flex flex-col'}`}>
           <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
             {expanded && (
               <button
@@ -90,7 +90,7 @@ const Index = () => {
 
     if (activeSection === "writing") {
       return (
-        <section {...(expanded ? {} : { [FIT_BOUNDARY]: true })} className={`px-6 ${expanded ? 'pt-6' : 'py-6 h-full flex flex-col'}`}>
+        <section {...(expanded ? {} : { [FIT_BOUNDARY]: true })} className={`px-6 ${expanded ? 'pt-6' : 'py-6 flat:py-3 h-full flex flex-col'}`}>
           <div className={`w-full max-w-3xl ${expanded ? 'mx-auto' : 'm-auto shrink-0'}`}>
             {expanded && (
               <button
@@ -113,7 +113,7 @@ const Index = () => {
             {!expanded && (
               <button
                 onClick={() => setExpanded(true)}
-                className="inline-block mt-6 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
+                className="inline-block mt-6 flat:mt-3 font-mono text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 Read all posts →
               </button>

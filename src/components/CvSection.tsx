@@ -260,23 +260,27 @@ const AsciiLogo = ({ exp }: { exp: Experience }) => {
   );
 };
 
-/** The logo and the command line that introduce a role. */
+/**
+ * The logo and the command line that introduce a role. Flat, they stand beside
+ * the card rather than over it — and where there is not even the width for
+ * that, they go, so the card keeps what little height there is.
+ */
 const RoleIntro = ({ exp }: { exp: Experience }) => (
-  <>
-    <div className="flex items-center gap-4 mb-6 shrink-0">
+  <div className="shrink-0 flat:hidden flat-wide:block flat-wide:w-[34%] flat-wide:self-center">
+    <div className="flex items-center gap-4 mb-6 flat:mb-3">
       <img src={exp.logo} alt={`${exp.company} logo`} className="w-14 h-14 shrink-0 object-contain" style={{ transform: `scale(${exp.logoScale ?? 1}) translateY(${exp.logoOffset ?? 0}px)` }} />
       <AsciiLogo exp={exp} />
     </div>
 
-    <div className="mb-4 shrink-0 text-muted-foreground">
+    <div className="mb-4 flat:mb-0 text-muted-foreground">
       <span className={exp.color}>$</span> {exp.command ?? "cat role.txt"}
     </div>
-  </>
+  </div>
 );
 
 /** One role: its heading, and as many of its bullets as the card has room for. */
 const RoleCard = ({ exp }: { exp: Experience }) => (
-  <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 min-h-0 flex flex-col`}>
+  <div className={`border ${exp.borderColor} rounded bg-card/50 p-5 flat:p-3 min-h-0 flex flex-col`}>
     <EntryHeading title={exp.title} at={exp.company} color={exp.color} className="cv-role-title">
       <span className="shrink-0 text-xs text-muted-foreground font-mono px-2 py-1 border border-border rounded bg-background">
         {exp.period}
@@ -304,10 +308,12 @@ const CvSection = () => {
   return (
     <div ref={containerRef} className="h-full overflow-hidden">
       {experiences.map((exp, i) => (
-        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="cv-scope h-full flex flex-col overflow-hidden px-6 py-6">
-          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col">
+        <div key={i} {...{ [FIT_BOUNDARY]: true }} className="cv-scope h-full flex flex-col overflow-hidden px-6 py-6 flat:py-3">
+          <div className="max-w-3xl w-full m-auto min-h-0 flex flex-col flat-wide:flex-row flat-wide:gap-6">
             <RoleIntro exp={exp} />
-            <RoleCard exp={exp} />
+            <div className="cv-body min-h-0 flex flex-col flat-wide:min-w-0 flat-wide:flex-1">
+              <RoleCard exp={exp} />
+            </div>
           </div>
         </div>
       ))}
