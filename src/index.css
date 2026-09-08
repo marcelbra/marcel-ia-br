@@ -132,10 +132,9 @@
     @apply border border-border rounded-sm p-4;
   }
 
-  /* Takes the colour of the line it sits on, the way a real cursor takes the
-     colour of the text it is about to write. */
   .cursor-blink::after {
     content: '█';
+    @apply text-ansi-green;
     animation: blink 1s step-end infinite;
   }
 
