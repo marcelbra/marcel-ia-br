@@ -43,6 +43,35 @@ describe.each([
   });
 });
 
+// jsdom evaluates no media queries, so these guard the wiring rather than the
+// result: verify what a flat window actually shows in a real browser.
+describe("a flat window", () => {
+  it("stands a role's intro beside its card rather than over it", () => {
+    const { container } = render(<CvSection />);
+
+    for (const page of container.firstElementChild!.children) {
+      const [intro] = page.firstElementChild!.children;
+      // A wordmark sets itself to whatever width it is given, so it survives a
+      // column of its own — and the height it was costing goes to the card.
+      expect(intro.className).toContain("flat-wide:w-[34%]");
+      expect(page.firstElementChild!.className).toContain("flat-wide:flex-row");
+    }
+  });
+
+  it("has a degree's intro go instead, having nowhere to stand", () => {
+    const { container } = render(<AcademicsSection />);
+
+    for (const page of container.firstElementChild!.children) {
+      const [intro] = page.firstElementChild!.children;
+      // A degree's logo is a picture blown up to nine times its box, sized for
+      // a row as wide as the card. There is no column it fits in, so unlike a
+      // wordmark it is not offered one.
+      expect(intro.className).toContain("flat:hidden");
+      expect(intro.className).not.toContain("flat-wide:");
+    }
+  });
+});
+
 // Marcel and writing live inside the terminal body rather than in a stack of
 // pages, but a window pulled wider or zoomed open has to treat them the same:
 // the content sits in the middle of the space it was given, not in its corner.

@@ -131,6 +131,8 @@ const CHROME = 60;
 const realRect = Element.prototype.getBoundingClientRect;
 
 const bioOf = () => [...document.querySelectorAll("p")].find((p) => p.textContent?.startsWith("bio"));
+/** The column under the row — beside it once the window is flat. */
+const bodyOf = () => bioOf()?.parentElement ?? null;
 const rowOf = () => document.querySelector(".hero-banner-row") as HTMLElement | null;
 const avatarShown = () => (document.querySelector(".hero-avatar") as HTMLElement | null)?.style.position !== "absolute";
 const bioLinesShown = () => {
@@ -170,17 +172,44 @@ const stubHero = (room: number) => {
     },
   });
 
-  const hero = () => (avatarShown() ? ROW : BANNER) + CHROME + bioLinesShown() * LINE;
+  const rowHeight = () => (avatarShown() ? ROW : BANNER);
+  const bodyHeight = () => CHROME + bioLinesShown() * LINE;
   Element.prototype.getBoundingClientRect = function (this: Element) {
     const el = this as HTMLElement;
-    const box = (height: number) =>
-      ({ height, top: 0, bottom: height, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
-    if (el.tagName === "PRE") return box(BANNER);
-    if (el === rowOf()) return box(avatarShown() ? ROW : BANNER);
-    if (el === bioOf()) return box(bioLinesShown() * LINE);
+    const box = (top: number, height: number) =>
+      ({ top, height, bottom: top + height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+    if (el.tagName === "PRE") return box(0, BANNER);
+    // The row sits above the body, which is what puts its height on the body's
+    // bill — the layout the hero has anywhere but a flat window.
+    if (el === rowOf()) return box(0, rowHeight());
+    if (el === bodyOf()) return box(rowHeight(), bodyHeight());
+    if (el === bioOf()) return box(rowHeight(), bioLinesShown() * LINE);
     // The hero's block and the section around it: what the boundary has to hold.
-    if (el.classList.contains("hero-scope") || el.parentElement?.classList.contains("hero-scope")) return box(hero());
-    return box(0);
+    if (el.classList.contains("hero-scope") || el.parentElement?.classList.contains("hero-scope")) {
+      return box(0, rowHeight() + bodyHeight());
+    }
+    return box(0, 0);
+  };
+};
+
+/**
+ * The same layout, but with the row standing beside the body rather than over
+ * it — what a flat window does with the hero. Nothing of the row's height is
+ * height the body has to share there.
+ */
+const stubBeside = () => {
+  const stacked = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    const rect = stacked.call(this) as DOMRect;
+    const el = this as HTMLElement;
+    if (el === bodyOf() || el === bioOf()) {
+      return { ...rect, top: 0, y: 0, bottom: rect.height, toJSON: () => ({}) } as DOMRect;
+    }
+    if (el.classList.contains("hero-scope") || el.parentElement?.classList.contains("hero-scope")) {
+      const beside = Math.max(rowOf()!.getBoundingClientRect().height, bodyOf()!.getBoundingClientRect().height);
+      return { ...rect, top: 0, y: 0, height: beside, bottom: beside, toJSON: () => ({}) } as DOMRect;
+    }
+    return rect;
   };
 };
 
@@ -239,6 +268,21 @@ describe("Hero in a terminal too short for it", () => {
     expect(bioOf()!.style.height).toBe("0px");
     // line-clamp counts from one, so a closed bio is closed by its height.
     expect(bioOf()!.style.webkitLineClamp).toBe("");
+  });
+
+  it("stops charging the row's height to the body once it stands beside it", () => {
+    // Ten pixels short of the body's own height, so the bio gives up one line
+    // of its five. Above the body the row would be costing 100 more, and the
+    // bio would be down to two — the whole point of moving it.
+    stubHero(CHROME + BIO_LINES * LINE - LINE);
+    stubBeside();
+    render(
+      <div data-fit-boundary>
+        <Hero />
+      </div>,
+    );
+
+    expect(bioLinesShown()).toBe(BIO_LINES - 1);
   });
 
   it("keeps every part while there is no layout to measure", () => {

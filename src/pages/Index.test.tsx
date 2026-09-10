@@ -71,6 +71,17 @@ describe("the page the terminal sits on", () => {
     expect(list.children).toHaveLength(3);
   });
 
+  it("has a post give up its excerpt where the window is flat", () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "writing" }));
+
+    // jsdom evaluates no media queries; this guards the wiring. Flat, a post is
+    // its title and its date — the line under it is the first thing worth the
+    // height it costs, and the terminal is 200px tall there.
+    const [excerpt] = screen.getAllByText(/caring less about trends/);
+    expect(excerpt.className).toContain("flat:hidden");
+  });
+
   it("expanded, hands the whole list back rather than the fitted one", () => {
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: "writing" }));
