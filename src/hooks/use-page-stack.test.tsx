@@ -107,6 +107,42 @@ describe("turning the pages of a stack", () => {
     expect(stack.scrollTop).toBe(PAGE_H);
   });
 
+  // What one flick of a MacBook's trackpad actually sends: the fingers, whose
+  // delta climbs as they move, and then the momentum that opens with an
+  // impulse of its own — higher than anything the fingers sent — and decays
+  // from there. Every 8ms, the way the display asks for frames.
+  const FLICK_FINGERS = [2, 5, 11, 21, 34, 49, 61, 68, 64, 57];
+  // The decay is not a clean slope: it holds a value for a frame or two on the
+  // way down, which is what a tail that only watches for "smaller than the
+  // last one" reads as a fresh push.
+  const FLICK_MOMENTUM = [92, 88, 88, 80, 74, 74, 66, 60, 60, 54, 48, 48, 42, 38, 38, 32, 28, 28, 24, 20, 20, 16, 12, 12, 8, 6, 6, 4, 2, 2, 1];
+  const trackpadFlick = (stack: HTMLElement, direction = 1) => {
+    for (const delta of [...FLICK_FINGERS, ...FLICK_MOMENTUM]) {
+      flick(stack, delta * direction);
+      settle(8);
+    }
+  };
+
+  it("turns one page for one flick of a trackpad, momentum and all", () => {
+    const stack = mount();
+
+    trackpadFlick(stack);
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H);
+  });
+
+  it("turns the next page for the next flick, tail or no tail", () => {
+    const stack = mount();
+
+    trackpadFlick(stack);
+    // A second flick lands while the first is still coasting: the hand
+    // pushing back through the tail is what tells the two apart.
+    settle(400);
+    trackpadFlick(stack);
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H * 2);
+  });
+
   it("reads a trackpad's decaying tail as the one flick it came from", () => {
     const stack = mount();
 
@@ -130,6 +166,19 @@ describe("turning the pages of a stack", () => {
     swipe(stack, 80);
     settle();
     expect(stack.scrollTop).toBe(PAGE_H * 2);
+  });
+
+  it("turns a page for each notch of a wheel, which arrive on their own", () => {
+    const stack = mount();
+
+    // A wheel is silent between notches where a trackpad streams, and that
+    // silence is all that separates a spin from one flick's momentum.
+    for (let i = 0; i < 3; i++) {
+      flick(stack, 100);
+      settle(170);
+    }
+    settle();
+    expect(stack.scrollTop).toBe(PAGE_H * 3);
   });
 
   it("stops at the ends of the stack", () => {
