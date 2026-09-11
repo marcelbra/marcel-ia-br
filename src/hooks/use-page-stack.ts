@@ -32,8 +32,29 @@ const MIN_PX_PER_FRAME = 2.5;
  * things on the two of them.
  */
 const WHEEL_STEP_PX = 60;
-/** Silence that ends a gesture: after it the next event starts a fresh one. */
-const GESTURE_GAP_MS = 120;
+/**
+ * Silence that ends a gesture. A trackpad streams at the refresh rate and
+ * keeps streaming through the momentum it sends after the fingers have left,
+ * so it never falls this quiet mid-flick; a wheel's notches arrive on their
+ * own and are separated by it.
+ */
+const GESTURE_GAP_MS = 60;
+/**
+ * One flick is one gesture in two parts: the fingers, whose delta climbs as
+ * they move, and then the momentum, which opens with an impulse of its own —
+ * higher than anything the fingers sent — and decays in steps that hold their
+ * value for a frame or two on the way down. Neither part is a second flick,
+ * and neither the size of a delta nor the cadence of the stream tells them
+ * apart: a plateau in the decay looks exactly like the even notches of a
+ * wheel.
+ *
+ * So a gesture turns one page, and the only thing that turns another inside
+ * it is a hand pushing back through the tail — a delta half again the one
+ * before it, late enough that momentum's opening impulse cannot be taken for
+ * it.
+ */
+const SURGE_RATIO = 1.5;
+const SURGE_GAP_MS = 350;
 /** A line and a page, for the wheels that count in those. */
 const LINE_PX = 16;
 const SWIPE_MIN_PX = 30;
@@ -68,6 +89,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
   const directionRef = useRef(0);
   const pushedRef = useRef(0);
   const turnedRef = useRef(false);
+  const turnedAtRef = useRef(0);
 
   const chase = useCallback(() => {
     const container = containerRef.current;
@@ -134,16 +156,14 @@ export function usePageStack<T extends HTMLElement>(count: number) {
         if (turnedRound) readyAtRef.current = 0;
       }
 
-      // A trackpad keeps sending for about a second after the fingers have
-      // left, the delta decaying the whole way. Once this gesture has turned
-      // a page, a stream that is dying away is that tail rather than a push,
-      // and pushing again — or a wheel's notches, which never decay — reads
-      // as exactly what it is.
-      const dying = magnitude < lastMagnitudeRef.current;
+      const surge = magnitude >= lastMagnitudeRef.current * SURGE_RATIO;
+      const sinceTurn = now - turnedAtRef.current;
       lastAtRef.current = now;
       lastMagnitudeRef.current = magnitude;
       directionRef.current = direction;
-      if (turnedRef.current && dying) return;
+      // Still the flick that turned the last page — its fingers, or the
+      // momentum behind them — unless a hand has pushed back through it.
+      if (turnedRef.current && !(surge && sinceTurn >= SURGE_GAP_MS)) return;
 
       pushedRef.current += delta;
       if (Math.abs(pushedRef.current) < WHEEL_STEP_PX) return;
@@ -156,6 +176,7 @@ export function usePageStack<T extends HTMLElement>(count: number) {
 
       pushedRef.current = 0;
       turnedRef.current = true;
+      turnedAtRef.current = now;
       readyAtRef.current = now + WHEEL_GAP_MS;
       goTo(indexRef.current + direction, WHEEL_TAU_MS);
     };
